@@ -18,6 +18,8 @@ import db from "../config/db.js";
 import { response } from "express";
 
 import { recordPasswordChange } from "../services/passwordAlert.service.js";
+import { error } from "console";
+import { stat } from "fs";
 
 const saltRounds = 10;
 
@@ -89,14 +91,35 @@ export const verifyEmail = async (req, res) => {
 };
 
 export const loginUser = async (req, res) => {
+  const { emailAddress, password } = req.body;
+
+  const normalizedEmail = emailAddress.trim().toLowerCase();
+  const normalizedPassword = password.trim();
+
+  if (!normalizedEmail) {
+    return res.status(400).json({
+      success: false,
+      message: "Email address is required",
+      status: 400,
+      errors: {
+        message: "Email address is required",
+      },
+    });
+  }
+
+  if (!normalizedPassword) {
+    return res.status(400).json({
+      success: false,
+      message: "Password cannot be empty",
+      status: 400,
+      errors: {
+        message: "Password cannot be empty",
+      },
+    });
+  }
+
   try {
-    const { data, error } = validateLoginInput(req.body);
-
-    if (error) {
-      return res.status(error.status).json({ message: error.message });
-    }
-
-    const loginToken = await logUserIn(data);
+    const loginToken = await logUserIn(normalizedEmail, normalizedPassword);
 
     res.cookie("loginToken", loginToken, {
       httpOnly: true,
@@ -111,8 +134,14 @@ export const loginUser = async (req, res) => {
 
     // await loginUser here
   } catch (error) {
-    console.error("loginUser error:", error);
-
+    return res.status(error.status || 500).json({
+      success: false,
+      message: error.message,
+      status: error.status,
+      errors: {
+        message: error.message,
+      },
+    });
     if (error.code === "USER_NOT_FOUND") {
       return res.status(404).json({ message: "Email not found" });
     } else if (error.code === "WRONG_PASSWORD") {

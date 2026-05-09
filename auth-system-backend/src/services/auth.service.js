@@ -89,15 +89,15 @@ export async function verifyEmailUser(token) {
   return user;
 }
 
-export async function logUserIn({ emailAddress, password }) {
+export async function logUserIn(emailAddress, password) {
   const [rows] = await db.execute(
     "SELECT id, first_name,last_name, email_address, email_address_verified, password_hash, verification_token_expires_at FROM users WHERE email_address = ?",
     [emailAddress],
   );
 
   if (rows.length === 0) {
-    const error = new Error("Invalid email or password");
-    error.code = "USER_NOT_FOUND";
+    const error = new Error("User not found");
+    error.status = 404;
     throw error;
   }
 
@@ -107,7 +107,7 @@ export async function logUserIn({ emailAddress, password }) {
 
   if (!comparePassword) {
     const error = new Error("Wrong password");
-    error.code = "WRONG_PASSWORD";
+    error.status = 404;
     throw error;
   }
 
@@ -139,7 +139,7 @@ export async function logUserIn({ emailAddress, password }) {
         const error = new Error(
           "A verification email was already sent. Check your inbox.",
         );
-        error.code = "TOKEN_STILL_VALID";
+        error.status = 409;
         throw error;
       }
     }
@@ -151,8 +151,10 @@ export async function logUserIn({ emailAddress, password }) {
       verificationLink,
     );
 
-    const error = new Error("Email not verified");
-    error.code = "UNVERIFIED_EMAIL";
+    const error = new Error(
+      "Email not verified. We have sent a new link to your inbox",
+    );
+    error.status = 403;
     throw error;
   }
 

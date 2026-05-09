@@ -54,11 +54,14 @@ export function validateRegisterInput(body) {
   return { data };
 }
 
-export function validateLoginInput(body) {
+// not used anywhere in code //remove
+export function validateLoginInput(emailAddress, password) {
   const data = {
-    emailAddress: body.emailAddress.trim(),
-    password: body.password.trim(),
+    emailAddress: emailAddress.trim(),
+    password: password.trim(),
   };
+
+  console.log(data || "Undefined data");
   //const emailAddress = body.emailAddress.trim();
   //const password = body.password.trim();
 

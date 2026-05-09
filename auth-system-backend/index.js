@@ -12,6 +12,8 @@ import userRoutes from "./src/routes/user.routes.js";
 import { json } from "stream/consumers";
 
 const app = express();
+
+// Swagger Doc Config
 const options = {
   definition: {
     openapi: "3.0.0",
@@ -65,11 +67,13 @@ app.use(express.json({ limit: "1mb" }));
 
 app.get("/", (req, res) => {
   res.status(200).json({
-    name: "auth-system-backend",
-    version: "1.0.0",
-    description: "Auth System Project(backend)",
-    status: "running",
-    uptime: process.uptime(),
+    success: true,
+    message: "Services are running",
+    data: {
+      service: "",
+      status: "running",
+      uptime: process.uptime(),
+    },
   });
 });
 
@@ -77,7 +81,11 @@ app.use("/api", userRoutes);
 app.use("/api/auth", authRoutes);
 
 app.use((req, res) => {
-  res.status(404).json({ error: "Route not found" });
+  res.status(404).json({
+    success: false,
+    message: "Route not found",
+    errors: { message: "Route not found" },
+  });
 });
 
 app.use((err, req, res, next) => {
@@ -93,6 +101,7 @@ const server = app.listen(PORT, HOST, () => {
 
   console.log("Server running:");
   console.log(`- IP:   http://${HOST}:${PORT}`);
+  console.log(`- Docs:   http://${HOST}:${PORT}/api-docs`);
 });
 
 server.on("error", (error) => {
