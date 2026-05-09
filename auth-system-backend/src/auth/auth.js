@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 export const auth = (req, res, next) => {
   const token = req.cookies.loginToken;
-  console.log(req.cookies || "Token not found!");
+  console.log(req.cookies.loginToken || "Token not found!");
 
   if (!token) {
     return res.status(401).json({
@@ -17,10 +17,10 @@ export const auth = (req, res, next) => {
   if (!process.env.JWT_SECRET) {
     return res.status(500).json({
       success: false,
-      message: "Server configuration error",
+      message: "Internal server error",
       status: 500,
       error: {
-        message: "Server configuration error",
+        message: "Internal server error",
       },
     });
   }

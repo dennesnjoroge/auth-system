@@ -18,8 +18,6 @@ import db from "../config/db.js";
 import { response } from "express";
 
 import { recordPasswordChange } from "../services/passwordAlert.service.js";
-import { error } from "console";
-import { stat } from "fs";
 
 const saltRounds = 10;
 
@@ -47,7 +45,11 @@ export const registerUser = async (req, res) => {
         "Registration successful. Please check your email to verify your account.",
     });
   } catch (error) {
-    console.error("registerUser error:", error);
+    return res.status(error.status || 500).json({
+      success: false,
+      message: error.message || "Internal server error",
+      status: error.status,
+    });
 
     if (error.code === "EMAIL_EXISTS") {
       return res.status(409).json({ message: "Email already exists" });
@@ -79,8 +81,6 @@ export const verifyEmail = async (req, res) => {
       message: "Email verified successfully. You can now log in.",
     });
   } catch (error) {
-    console.error("Verify user/email error:", error);
-
     if (error.code === "INVALID_TOKEN") {
       return res.status(400).json({ message: "Invalid verification token" });
     } else if (error.code === "EXPIRED_TOKEN") {
@@ -120,8 +120,9 @@ export const loginUser = async (req, res) => {
 
   try {
     const loginToken = await logUserIn(normalizedEmail, normalizedPassword);
+    console.log(loginToken);
 
-    res.cookie("loginToken", loginToken, {
+    await res.cookie("loginToken", loginToken, {
       httpOnly: true,
       secure: false,
       sameSite: "lax",
@@ -129,35 +130,22 @@ export const loginUser = async (req, res) => {
     });
 
     return res.status(200).json({
+      success: true,
       message: "Login successful",
+      status: 200,
+      data: {
+        message: "Login was successfull",
+      },
     });
-
-    // await loginUser here
   } catch (error) {
     return res.status(error.status || 500).json({
       success: false,
-      message: error.message,
-      status: error.status,
+      message: error.message || "Internal server error",
+      status: error.status || 500,
       errors: {
-        message: error.message,
+        message: error.message || "Internal server error",
       },
     });
-    if (error.code === "USER_NOT_FOUND") {
-      return res.status(404).json({ message: "Email not found" });
-    } else if (error.code === "WRONG_PASSWORD") {
-      return res.status(404).json({ message: "Wrong password" });
-    } else if (error.code === "UNVERIFIED_EMAIL") {
-      return res.status(404).json({
-        message:
-          "Email not verified. A verification link has been sent. Please check your email.",
-      });
-    } else if ((error.code = "TOKEN_STILL_VALID")) {
-      return res.status(404).json({
-        message: "A verification email was already sent. Check your inbox.",
-      });
-    }
-
-    return res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -290,7 +278,6 @@ export const verifyResetCode = async (req, res) => {
       resetToken: resetToken,
     });
   } catch (error) {
-    console.error("Verify reset code error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -340,7 +327,6 @@ export const resetPassword = async (req, res) => {
     await recordPasswordChange({ userId, req, changeMethod });
     return res.status(200).json({ message: "Password reset successful" });
   } catch (error) {
-    console.error("Reset password error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -380,7 +366,6 @@ export const changePassword = async (req, res) => {
 
     return res.status(200).json({ message: "Password changed succesfully" });
   } catch (error) {
-    console.error("Reset password error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };

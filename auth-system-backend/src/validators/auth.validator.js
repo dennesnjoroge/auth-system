@@ -9,6 +9,8 @@ export function validateRegisterInput(body) {
   };
 
   if (!data.firstName) {
+    throw new Error("First name is required");
+
     return {
       error: { status: 400, message: "First name is required" },
     };

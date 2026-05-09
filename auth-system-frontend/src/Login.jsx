@@ -78,7 +78,7 @@ function Login() {
           </div>
 
           <button
-            className="btn"
+            className="btn btn-dark fw-bold"
             type="submit"
             disabled={isLoading || !emailAddress || !password}
           >

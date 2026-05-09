@@ -158,6 +158,13 @@ export async function logUserIn(emailAddress, password) {
     throw error;
   }
 
+  if (!process.env.JWT_SECRET) {
+    const error = new Error("Server configuration error");
+
+    error.status = 500;
+    throw error;
+  }
+
   const signToken = (user) => {
     return jwt.sign(
       { id: user.id, email: user.email_address },
