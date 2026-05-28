@@ -1,6 +1,6 @@
 import {
   registerUserService,
-  verifyEmailUser,
+  verifyEmailService,
   loginUserService,
 } from "../services/auth.service.js";
 import { validateRegisterInput } from "../validators/auth.validator.js";
@@ -69,34 +69,23 @@ export const registerUser = async (req, res, next) => {
   }
 };
 
-export const verifyEmail = async (req, res) => {
-  const { token } = req.body;
-
+export const verifyEmail = async (req, res, next) => {
   try {
-    if (!token) {
-      return res
-        .status(400)
-        .json({ message: "Verification token is required" });
+    const { verificationToken } = req.body;
+
+    if (!verificationToken) {
+      throw createAppError("Verification token is required", 400);
     }
 
-    const user = await verifyEmailUser(token);
+    await verifyEmailService(verificationToken);
 
-    // send onboarding email here
-    const { first_name, last_name, email_address } = user;
-
-    const fullName = `${first_name} ${last_name}`;
-    sendOnboardingEmail(fullName, email_address);
-
-    return res.status(201).json({
-      message: "Email verified successfully. You can now log in.",
-    });
+    return sendSuccessMessage(
+      res,
+      200,
+      "Email verified successfully. You can now log in",
+    );
   } catch (error) {
-    if (error.code === "INVALID_TOKEN") {
-      return res.status(400).json({ message: "Invalid verification token" });
-    } else if (error.code === "EXPIRED_TOKEN") {
-      return res.status(404).json({ message: "Token has expired" });
-    }
-    return res.status(500).json({ message: "Internal server error" });
+    next(error);
   }
 };
 

@@ -7,7 +7,7 @@
 
 /**
  * @swagger
- * /api/auth/register:
+ * /api/v1/auth/register:
  *   post:
  *     summary: Register user
  *     tags: [Auth]
@@ -46,7 +46,7 @@
 
 /**
  * @swagger
- * /api/auth/verify:
+ * /api/v1/auth/verify:
  *   post:
  *     summary: Verify email using token
  *     tags: [Auth]
@@ -59,11 +59,11 @@
  *             required:
  *               - token
  *             properties:
- *               token:
+ *               verificationToken:
  *                 type: string
  *                 example: "bf9e659e7e0cce1f26b20bdd392b6d7ce77574efb32bd5a02bb00afe76530335"
  *     responses:
- *       201:
+ *       200:
  *         description: Email verified successfully. User can now log in.
  *       400:
  *         description: Missing or invalid token
@@ -98,8 +98,10 @@
  *     responses:
  *       200:
  *         description: Login successful (cookie set)
- *       404:
- *         description: Invalid credentials or unverified email
+ *       401:
+ *         description: Invalid credentials(email/password)
+ *       403:
+ *         description: Unverified email
  *       500:
  *         description: Internal server error
  */
