@@ -22,6 +22,7 @@ import { createAppError } from "../utils/error.js";
 import { sendErrorMessage } from "../utils/error.js";
 
 import { recordPasswordChange } from "../services/passwordAlert.service.js";
+import validator from "validator";
 
 const saltRounds = 10;
 
@@ -32,13 +33,24 @@ export const registerUser = async (req, res, next) => {
     const normalizedFirstName = firstName?.trim() || "";
     const normalizedLastName = lastName?.trim() || "";
     const normalizedEmailAddress = emailAddress?.trim().toLowerCase() || "";
-    const normalizedPassword = password?.trim() || "";
+    const normalizedPassword = password || "";
 
+    if (!normalizedFirstName) {
+      throw createAppError("First name is required", 400);
+    }
+
+    if (!normalizedLastName) {
+      throw createAppError("Last name is required", 400);
+    }
+
+    if (!validator.isEmail(normalizedEmailAddress)) {
+      throw createAppError("Invalid email address", 400);
+    }
     if (
       !normalizedFirstName ||
       !normalizedLastName ||
       !normalizedEmailAddress ||
-      !normalizedPassword
+      !normalizedPassword.trim()
     ) {
       throw createAppError("Missing required fields", 400);
     }
