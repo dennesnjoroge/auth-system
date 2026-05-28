@@ -1,4 +1,5 @@
 import transporter from "./email.transporter.js";
+import { createAppError } from "../utils/error.js";
 import verifyEmailTemplate from "./templates/verifyEmailTemplate.js";
 import { resetCodeTemplate } from "./templates/resetCodeTemplate.js";
 import { onboardingTemplate } from "./templates/onboardingTemplate.js";
@@ -7,26 +8,26 @@ import { accountDeletedTemplate } from "./templates/accountDeleteTemplate.js";
 
 export const sendSignupEmail = async (
   fullName,
-  email,
+  emailAddress,
   verificationLink,
-  linkExpirytime,
+  linkExpiryTime,
 ) => {
   try {
     const html = verifyEmailTemplate(
       fullName,
       verificationLink,
-      email,
-      linkExpirytime,
+      emailAddress,
+      linkExpiryTime,
     );
     await transporter.sendMail({
       from: `"Auth System" <${process.env.EMAIL_USER}>`,
-      to: email,
+      to: emailAddress,
       subject: "Verify your Email",
       html,
     });
   } catch (error) {
-    console.error(error);
-    throw new Error("Failed to send signup email");
+    console.error("Critical email service error: ", error.message);
+    throw createAppError("Failed to send signup email", 500);
   }
 };
 
