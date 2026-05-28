@@ -63,10 +63,10 @@ export const sendOnboardingEmail = async (name, email) => {
 export const sendPasswordChangedAlert = async ({
   email,
   name,
-  timestamp, //var
-  ipAddress, // var
-  deviceInfo, // var
-  location, // var
+  timestamp,
+  ipAddress,
+  deviceInfo,
+  location,
 }) => {
   try {
     const html = getPasswordChangedEmailTemplate({

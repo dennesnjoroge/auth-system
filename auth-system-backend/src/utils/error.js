@@ -6,3 +6,9 @@ export const sendErrorMessage = (res, statusCode, message) => {
     errors: { message },
   });
 };
+
+export const throwErrorMessage = (message, statusCode) => {
+  const error = new Error(message);
+  error.status = statusCode;
+  throw error;
+};
