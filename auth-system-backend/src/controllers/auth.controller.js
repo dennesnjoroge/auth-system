@@ -110,11 +110,11 @@ export const loginUser = async (req, res) => {
   }
 
   try {
-    const loginToken = await logUserIn(normalizedEmail, normalizedPassword);
+    const accessToken = await logUserIn(normalizedEmail, normalizedPassword);
 
-    await res.cookie("loginToken", loginToken, {
+    await res.cookie("_at", accessToken, {
       httpOnly: true,
-      secure: false,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 60 * 60 * 1000,
     });
@@ -130,17 +130,13 @@ export const loginUser = async (req, res) => {
 };
 
 export const logoutUser = async (req, res) => {
-  res.clearCookie("loginToken", {
+  res.clearCookie("_at", {
     httpOnly: true,
-    secure: false,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    path: "/", // IMPORTANT (often missing)
   });
 
-  return res.status(200).json({
-    success: true,
-    message: "Logged out successfully",
-  });
+  return sendSuccessMessage(res, 200, "Logged out successfully");
 };
 
 export const forgotPassword = async (req, res) => {

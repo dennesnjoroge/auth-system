@@ -2,7 +2,11 @@ import bcrypt from "bcryptjs";
 import crypto, { sign } from "crypto";
 import db from "../config/db.js";
 import jwt from "jsonwebtoken";
+import { resendEmailUtil } from "../utils/mail.js";
+import { signAccessToken } from "../utils/tokens.js";
 import { sendSignupEmail } from "./email.service.js";
+import { throwErrorMessage } from "../utils/error.js";
+import { sendErrorMessage } from "../utils/error.js";
 
 const SALT_ROUNDS = 10;
 
@@ -96,9 +100,7 @@ export async function logUserIn(emailAddress, password) {
   );
 
   if (rows.length === 0) {
-    const error = new Error("User not found");
-    error.status = 404;
-    throw error;
+    return throwErrorMessage("User with that Email was not found", 404);
   }
 
   const user = rows[0];
@@ -106,73 +108,40 @@ export async function logUserIn(emailAddress, password) {
   const comparePassword = await bcrypt.compare(password, user.password_hash);
 
   if (!comparePassword) {
-    const error = new Error("Wrong password");
-    error.status = 404;
-    throw error;
+    return throwErrorMessage("Wrong password", 404);
   }
-
-  const resendMail = async (email) => {
-    const verificationToken = crypto.randomBytes(32).toString("hex");
-    const verificationTokenHash = crypto
-      .createHash("sha256")
-      .update(verificationToken)
-      .digest("hex");
-
-    const linkExpirytime = 5;
-    const expiresAt = new Date(Date.now() + linkExpirytime * 60 * 1000);
-
-    await db.execute(
-      `UPDATE users 
-   SET verification_token_hash = ?, 
-       verification_token_expires_at = ?
-   WHERE email_address = ?`,
-      [verificationTokenHash, expiresAt, email],
-    );
-    return { verificationToken };
-  };
 
   if (user.email_address_verified === 0) {
     if (user.verification_token_expires_at) {
       const expires = new Date(user.verification_token_expires_at);
 
       if (expires > new Date()) {
-        const error = new Error(
-          "A verification email was already sent. Check your inbox.",
+        return throwErrorMessage(
+          "A verification email was already sent. Check your inbox",
+          409,
         );
-        error.status = 409;
-        throw error;
       }
     }
-    let { verificationToken } = await resendMail(user.email_address);
-    let verificationLink = `http://${process.env.CLIENT_ORIGIN}/verify?token=${verificationToken}`;
-    sendSignupEmail(
-      `${user.first_name} ${user.last_name}`,
+
+    const verificationToken = await resendEmailUtil(user?.email_address);
+    const verificationLink = `http://${process.env.CLIENT_ORIGIN}/verify?token=${verificationToken}`;
+    await sendSignupEmail(
+      `${user?.first_name || "User"} ${user?.last_name || ""}`,
       user.email_address,
       verificationLink,
     );
 
-    const error = new Error(
+    return throwErrorMessage(
       "Email not verified. We have sent a new link to your inbox",
+      403,
     );
-    error.status = 403;
-    throw error;
   }
 
   if (!process.env.JWT_SECRET) {
-    const error = new Error("Server configuration error");
+    console.error("ENV Variable Error: JWT Secret is missing");
 
-    error.status = 500;
-    throw error;
+    return throwErrorMessage("Internal server error", 500);
   }
 
-  const signToken = (user) => {
-    return jwt.sign(
-      { id: user.id, email: user.email_address },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" },
-    );
-  };
-
-  const token = signToken(user);
-  return token;
+  return signAccessToken(user?.id, user?.email_address);
 }
