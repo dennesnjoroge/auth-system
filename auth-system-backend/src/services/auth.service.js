@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import crypto, { sign } from "crypto";
+import crypto from "crypto";
 import db from "../config/db.js";
 import jwt from "jsonwebtoken";
 import { recordPasswordChange } from "./passwordAlert.service.js";
@@ -84,14 +84,17 @@ export const registerUserService = async ({
 };
 
 export async function verifyEmailService(verificationToken) {
+  const connection = await db.getConnection();
   try {
+    await connection.beginTransaction();
+
     const verificationTokenHash = crypto
       .createHash("sha256")
       .update(verificationToken)
       .digest("hex");
 
-    const [rows] = await db.execute(
-      "SELECT id, first_name, last_name, email_address, verification_token_expires_at FROM users WHERE verification_token_hash = ?",
+    const [rows] = await connection.execute(
+      "SELECT id, user_id, expires_at FROM verification_tokens WHERE token_hash = ?",
       [verificationTokenHash],
     );
 
@@ -99,20 +102,48 @@ export async function verifyEmailService(verificationToken) {
       throw createAppError("Invalid verification token", 400);
     }
 
-    const user = rows[0];
+    const token = rows[0];
 
-    if (new Date(user.verification_token_expires_at) < new Date()) {
+    if (token.expires_at < new Date()) {
       throw createAppError("Verification token has expired", 400);
     }
 
-    await db.execute(
-      `UPDATE users SET email_address_verified = ?, verification_token_hash = ?, verification_token_expires_at = ? WHERE id = ?`,
-      [true, null, null, user.id],
+    await connection.execute(
+      `UPDATE users SET email_verified = ? WHERE id = ?`,
+      [1, token.user_id],
     );
 
-    const { first_name, last_name, email_address } = user;
-    await sendOnboardingEmail(`${first_name} ${last_name}`, email_address);
+    await connection.execute(
+      `DELETE FROM verification_tokens WHERE user_id = ?`,
+      [token.user_id],
+    );
+
+    const [userRows] = await connection.execute(
+      `SELECT first_name, last_name, email_address FROM users WHERE id = ?`,
+      [token.user_id],
+    );
+
+    if (userRows.length === 0) {
+      throw createAppError("User with that token was not found", 404);
+    }
+
+    const user = userRows[0];
+
+    await connection.commit();
+
+    try {
+      await sendOnboardingEmail(
+        `${user.first_name} ${user.last_name}`,
+        user.email_address,
+      );
+    } catch (emailError) {
+      console.error(
+        "Send Onboarding Email Critical Error: ",
+        emailError.message,
+      );
+    }
   } catch (error) {
+    await connection.rollback();
     if (error.isAppError) {
       throw error;
     }
@@ -122,6 +153,8 @@ export async function verifyEmailService(verificationToken) {
     );
 
     throw createAppError("Internal Server Error", 500);
+  } finally {
+    connection.release();
   }
 }
 
