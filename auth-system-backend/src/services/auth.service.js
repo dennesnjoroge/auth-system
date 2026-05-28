@@ -17,13 +17,13 @@ export const registerUserService = async ({
   normalizedPassword: password,
 }) => {
   try {
-    const [rowss] = await db.execute(
+    const [rows] = await db.execute(
       "SELECT id FROM users WHERE email_address = ?",
       [emailAddress],
     );
 
     if (rows.length > 0) {
-      return throwErrorMessage(
+      throw createAppError(
         "An account with that email address already exists",
         409,
       );
@@ -37,7 +37,7 @@ export const registerUserService = async ({
       .digest("hex");
     const linkExpiryTime = 5;
     const expiresAt = new Date(Date.now() + linkExpiryTime * 60 * 1000);
-    const verificationLink = `http://${process.env.CLIENT_ORIGIN}/verify?token=${verificationToken}`;
+    const verificationLink = `${process.env.CLIENT_ORIGIN}/verify?token=${verificationToken}`;
 
     await db.execute(
       `INSERT INTO users (
@@ -58,7 +58,7 @@ export const registerUserService = async ({
       ],
     );
 
-    await sendSignupEmaill(
+    await sendSignupEmail(
       `${firstName} ${lastName}`,
       emailAddress,
       verificationLink,
@@ -72,7 +72,7 @@ export const registerUserService = async ({
     }
 
     console.error("Registration service Critical Error:", error.message);
-    return throwErrorMessage("Internal Server Error", 500);
+    throw createAppError("Internal Server Error", 500);
   }
 };
 

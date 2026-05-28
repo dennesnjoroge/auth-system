@@ -21,24 +21,13 @@ import { recordPasswordChange } from "../services/passwordAlert.service.js";
 
 const saltRounds = 10;
 
-export const registerUser = async (req, res) => {
-  const { firstName, lastName, emailAddress, password } = req?.body || {};
+export const registerUser = async (req, res, next) => {
   try {
-    if (!firstName || !lastName) {
-      return sendErrorMessage(res, 400, "First and last names are required");
-    }
-
-    if (!emailAddress) {
-      return sendErrorMessage(res, 400, "Email address is required");
-    }
-
-    if (!password) {
-      return sendErrorMessage(res, 400, "Password cannot be empty");
-    }
+    const { firstName, lastName, emailAddress, password } = req?.body || {};
 
     const normalizedFirstName = firstName?.trim() || "";
     const normalizedLastName = lastName?.trim() || "";
-    const normalizedEmailAddress = emailAddress?.trim()?.toLowerCase() || "";
+    const normalizedEmailAddress = emailAddress?.trim().toLowerCase() || "";
     const normalizedPassword = password?.trim() || "";
 
     if (
@@ -47,22 +36,17 @@ export const registerUser = async (req, res) => {
       !normalizedEmailAddress ||
       !normalizedPassword
     ) {
-      return sendErrorMessage(res, 400, "Missing required fields");
+      throw createAppError("Missing required fields", 400);
     }
 
     if (normalizedPassword.length < 8) {
-      return sendErrorMessage(
-        res,
-        400,
-        "Password must be at least 8 characters long",
-      );
+      throw createAppError("Password must be at least 8 characters long", 400);
     }
 
     if (!passwordRegex(normalizedPassword)) {
-      return sendErrorMessage(
-        res,
-        400,
+      throw createAppError(
         "Password must include uppercase, lowercase, number, and special character",
+        400,
       );
     }
 
@@ -75,17 +59,13 @@ export const registerUser = async (req, res) => {
 
     await registerUserService(registrationData);
 
-    return res.status(201).json({
-      message:
-        "Registration successful. Please check your email to verify your account.",
-    });
+    return sendSuccessMessage(
+      res,
+      201,
+      "Registration successful. Please check your email to verify your account.",
+    );
   } catch (error) {
-    if (error.isAppError) {
-      return sendErrorMessage(res, error.status, error.message);
-    }
-
-    console.error("Registration Error:", error.message);
-    return sendErrorMessage(res, 500, "Internal Server Error");
+    next(error);
   }
 };
 
