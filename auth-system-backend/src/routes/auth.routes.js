@@ -121,7 +121,7 @@
 
 /**
  * @swagger
- * /api/auth/forgot:
+ * /api/v1/auth/forgot:
  *   post:
  *     summary: Request password reset code
  *     tags: [Auth]

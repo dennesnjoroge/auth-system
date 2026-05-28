@@ -30,7 +30,6 @@ export async function recordPasswordChange({ userId, req, changeMethod }) {
   await sendPasswordChangedAlert({
     email,
     name,
-    // variables
     timestamp: new Date(),
     ipAddress,
     deviceInfo,
