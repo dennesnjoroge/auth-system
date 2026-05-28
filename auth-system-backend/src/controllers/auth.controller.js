@@ -1,12 +1,9 @@
 import {
-  createUser,
+  registerUserService,
   verifyEmailUser,
   loginUserService,
 } from "../services/auth.service.js";
-import {
-  validateRegisterInput,
-  validateLoginInput,
-} from "../validators/auth.validator.js";
+import { validateRegisterInput } from "../validators/auth.validator.js";
 import {
   sendSignupEmail,
   sendResetCodeEmail,
@@ -15,6 +12,7 @@ import {
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import db from "../config/db.js";
+import { passwordRegex } from "../utils/password.js";
 import { sendSuccessMessage } from "../utils/success.js";
 import { sendErrorMessage } from "../utils/error.js";
 
@@ -23,40 +21,70 @@ import { recordPasswordChange } from "../services/passwordAlert.service.js";
 const saltRounds = 10;
 
 export const registerUser = async (req, res) => {
+  const { firstName, lastName, emailAddress, password } = req?.body || {};
   try {
-    const { data, error } = validateRegisterInput(req.body);
-
-    if (error) {
-      return res.status(error.status).json({ message: error.message });
+    if (!firstName || !lastName) {
+      return sendErrorMessage(res, 400, "First and last names are required");
     }
 
-    const fullName = `${data.firstName} ${data.lastName}`;
+    if (!emailAddress) {
+      return sendErrorMessage(res, 400, "Email address is required");
+    }
 
-    const { verificationToken, linkExpirytime } = await createUser(data);
-    const verificationLink = `http://${process.env.CLIENT_ORIGIN}/verify?token=${verificationToken}`;
-    sendSignupEmail(
-      `${data.firstName} ${data.lastName}`,
-      data.emailAddress,
-      verificationLink,
-      linkExpirytime,
-    );
+    if (!password) {
+      return sendErrorMessage(res, 400, "Password cannot be empty");
+    }
+
+    const normalizedFirstName = firstName?.trim() || "";
+    const normalizedLastName = lastName?.trim() || "";
+    const normalizedEmailAddress = emailAddress?.trim()?.toLowerCase() || "";
+    const normalizedPassword = password?.trim() || "";
+
+    if (
+      !normalizedFirstName ||
+      !normalizedLastName ||
+      !normalizedEmailAddress ||
+      !normalizedPassword
+    ) {
+      return sendErrorMessage(res, 400, "Missing required fields");
+    }
+
+    if (normalizedPassword.length < 8) {
+      return sendErrorMessage(
+        res,
+        400,
+        "Password must be at least 8 characters long",
+      );
+    }
+
+    if (!passwordRegex(normalizedPassword)) {
+      return sendErrorMessage(
+        res,
+        400,
+        "Password must include uppercase, lowercase, number, and special character",
+      );
+    }
+
+    const registrationData = {
+      normalizedFirstName,
+      normalizedLastName,
+      normalizedEmailAddress,
+      normalizedPassword,
+    };
+
+    await registerUserService(registrationData);
 
     return res.status(201).json({
       message:
         "Registration successful. Please check your email to verify your account.",
     });
   } catch (error) {
-    return res.status(error.status || 500).json({
-      success: false,
-      message: error.message || "Internal server error",
-      status: error.status,
-    });
-
-    if (error.code === "EMAIL_EXISTS") {
-      return res.status(409).json({ message: "Email already exists" });
+    if (error.isAppError) {
+      return sendErrorMessage(res, error.status, error.message);
     }
 
-    return res.status(500).json({ message: "Internal server error" });
+    console.error("Registration Error:", error.message);
+    return sendErrorMessage(res, 500, "Internal Server Error");
   }
 };
 

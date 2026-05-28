@@ -7,8 +7,9 @@ export const sendErrorMessage = (res, statusCode, message) => {
   });
 };
 
-export const throwErrorMessage = (message, statusCode) => {
+export const createAppError = (message, statusCode) => {
   const error = new Error(message);
   error.status = statusCode;
-  throw error;
+  error.isAppError = true;
+  return error;
 };

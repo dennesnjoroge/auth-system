@@ -20,5 +20,5 @@ export const resendEmailUtil = async (email) => {
     [verificationTokenHash, expiresAt, email],
   );
 
-  return verificationToken;
+  return { verificationToken, linkExpiryTime };
 };
