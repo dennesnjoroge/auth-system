@@ -15,7 +15,8 @@ import {
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import db from "../config/db.js";
-import { response } from "express";
+import { sendSuccessMessage } from "../utils/success.js";
+import { sendErrorMessage } from "../utils/error.js";
 
 import { recordPasswordChange } from "../services/passwordAlert.service.js";
 
@@ -91,36 +92,25 @@ export const verifyEmail = async (req, res) => {
 };
 
 export const loginUser = async (req, res) => {
-  const { emailAddress, password } = req.body;
+  const { emailAddress, password } = req?.body || {};
+
+  if (!emailAddress || !password) {
+    return sendErrorMessage(res, 400, "Missing required fields");
+  }
 
   const normalizedEmail = emailAddress.trim().toLowerCase();
   const normalizedPassword = password.trim();
 
   if (!normalizedEmail) {
-    return res.status(400).json({
-      success: false,
-      message: "Email address is required",
-      status: 400,
-      errors: {
-        message: "Email address is required",
-      },
-    });
+    return sendErrorMessage(res, 400, "Email address is required");
   }
 
   if (!normalizedPassword) {
-    return res.status(400).json({
-      success: false,
-      message: "Password cannot be empty",
-      status: 400,
-      errors: {
-        message: "Password cannot be empty",
-      },
-    });
+    return sendErrorMessage(res, 400, "Password cannot be empty");
   }
 
   try {
     const loginToken = await logUserIn(normalizedEmail, normalizedPassword);
-    console.log(loginToken);
 
     await res.cookie("loginToken", loginToken, {
       httpOnly: true,
@@ -129,23 +119,13 @@ export const loginUser = async (req, res) => {
       maxAge: 60 * 60 * 1000,
     });
 
-    return res.status(200).json({
-      success: true,
-      message: "Login successful",
-      status: 200,
-      data: {
-        message: "Login was successfull",
-      },
-    });
+    return sendSuccessMessage(res, 200, "Login was successful");
   } catch (error) {
-    return res.status(error.status || 500).json({
-      success: false,
-      message: error.message || "Internal server error",
-      status: error.status || 500,
-      errors: {
-        message: error.message || "Internal server error",
-      },
-    });
+    return sendErrorMessage(
+      res,
+      error.status || 500,
+      error.message || "Internal server error",
+    );
   }
 };
 
