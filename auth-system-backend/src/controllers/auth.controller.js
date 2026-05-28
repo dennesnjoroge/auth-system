@@ -14,6 +14,7 @@ import bcrypt from "bcryptjs";
 import db from "../config/db.js";
 import { passwordRegex } from "../utils/password.js";
 import { sendSuccessMessage } from "../utils/success.js";
+import { createAppError } from "../utils/error.js";
 import { sendErrorMessage } from "../utils/error.js";
 
 import { recordPasswordChange } from "../services/passwordAlert.service.js";
@@ -119,31 +120,27 @@ export const verifyEmail = async (req, res) => {
   }
 };
 
-export const loginUser = async (req, res) => {
-  const { emailAddress, password } = req?.body || {};
-
-  if (!emailAddress || !password) {
-    return sendErrorMessage(res, 400, "Missing required fields");
-  }
-
-  const normalizedEmail = emailAddress.trim().toLowerCase();
-  const normalizedPassword = password.trim();
-
-  if (!normalizedEmail) {
-    return sendErrorMessage(res, 400, "Email address is required");
-  }
-
-  if (!normalizedPassword) {
-    return sendErrorMessage(res, 400, "Password cannot be empty");
-  }
-
+export const loginUser = async (req, res, next) => {
   try {
+    const { emailAddress, password } = req?.body || {};
+
+    const normalizedEmail = emailAddress?.trim().toLowerCase();
+    const normalizedPassword = password?.trim();
+
+    if (!normalizedEmail) {
+      throw createAppError("Email address is required");
+    }
+
+    if (!normalizedPassword) {
+      throw createAppError("Password cannot be empty", 400);
+    }
+
     const accessToken = await loginUserService(
       normalizedEmail,
       normalizedPassword,
     );
 
-    await res.cookie("_at", accessToken, {
+    res.cookie("_at", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -152,11 +149,7 @@ export const loginUser = async (req, res) => {
 
     return sendSuccessMessage(res, 200, "Login was successful");
   } catch (error) {
-    return sendErrorMessage(
-      res,
-      error.status || 500,
-      error.message || "Internal server error",
-    );
+    next(error);
   }
 };
 

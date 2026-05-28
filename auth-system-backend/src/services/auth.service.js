@@ -117,7 +117,7 @@ export async function loginUserService(emailAddress, password) {
     );
 
     if (rows.length === 0) {
-      throw createAppError("Incorrect email or password", 404);
+      throw createAppError("Incorrect email or password", 401);
     }
 
     const user = rows[0];
@@ -125,7 +125,7 @@ export async function loginUserService(emailAddress, password) {
     const comparePassword = await bcrypt.compare(password, user.password_hash);
 
     if (!comparePassword) {
-      throw createAppError("Incorrect email or password", 404);
+      throw createAppError("Incorrect email or password", 401);
     }
 
     if (user.email_address_verified === 0) {
@@ -135,7 +135,7 @@ export async function loginUserService(emailAddress, password) {
         if (expires > new Date()) {
           throw createAppError(
             "A verification email was already sent. Check your inbox",
-            409,
+            403,
           );
         }
       }
@@ -152,7 +152,7 @@ export async function loginUserService(emailAddress, password) {
       );
 
       throw createAppError(
-        "Email not verified. We have sent an new link to your inbox",
+        "Email not verified. We have sent a new link to your inbox",
         403,
       );
     }
@@ -163,7 +163,7 @@ export async function loginUserService(emailAddress, password) {
       throw error;
     }
 
-    console.error("Login Service critical error: ", error.message);
-    return throwErrorMessage("Internal Server Error", 500);
+    console.error("Login Service Critical Error: ", error.message);
+    throw createAppError("Internal Server Error", 500);
   }
 }

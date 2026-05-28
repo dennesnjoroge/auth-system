@@ -9,7 +9,7 @@ export const sendErrorMessage = (res, statusCode, message) => {
 
 export const createAppError = (message, statusCode) => {
   const error = new Error(message);
-  error.status = statusCode;
+  error.statusCode = statusCode;
   error.isAppError = true;
   return error;
 };
