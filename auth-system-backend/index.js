@@ -7,8 +7,7 @@ import cors from "cors";
 import os from "os";
 import cookieParser from "cookie-parser";
 import db from "./src/config/db.js";
-import authRoutes from "./src/routes/auth.routes.js";
-import userRoutes from "./src/routes/user.routes.js";
+import indexRoutes from "./src/routes/index.js";
 import { json } from "stream/consumers";
 
 const app = express();
@@ -77,8 +76,7 @@ app.get("/", (req, res) => {
   });
 });
 
-app.use("/api", userRoutes);
-app.use("/api/auth", authRoutes);
+app.use("/api/v1", indexRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
