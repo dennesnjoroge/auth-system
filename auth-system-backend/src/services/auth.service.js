@@ -62,11 +62,13 @@ export const registerUserService = async ({
 
     await connection.commit();
 
-    await sendSignupEmail(
+    sendSignupEmail(
       `${firstName} ${lastName}`,
       emailAddress,
       verificationLink,
       linkExpiryTime,
+    ).catch((emailError) =>
+      console.error("Send SignupEmail Error: ", emailError),
     );
 
     return;
@@ -161,7 +163,7 @@ export async function verifyEmailService(verificationToken) {
 export async function loginUserService(emailAddress, password) {
   try {
     const [rows] = await db.execute(
-      "SELECT id, first_name,last_name, email_address, email_address_verified, password_hash, verification_token_expires_at FROM users WHERE email_address = ?",
+      "SELECT id, first_name, last_name, email_address, email_verified, password_hash FROM users WHERE email_address = ?",
       [emailAddress],
     );
 
@@ -177,11 +179,16 @@ export async function loginUserService(emailAddress, password) {
       throw createAppError("Incorrect email or password", 401);
     }
 
-    if (user.email_address_verified === 0) {
-      if (user.verification_token_expires_at) {
-        const expires = new Date(user.verification_token_expires_at);
+    const [tokenRows] = await db.execute(
+      "SELECT expires_at FROM verification_tokens WHERE user_id = ?",
+      [user.id],
+    );
 
-        if (expires > new Date()) {
+    const token = tokenRows[0];
+
+    if (user.email_verified === 0) {
+      if (token?.expires_at) {
+        if (new Date(token.expires_at).getTime() > Date.now()) {
           throw createAppError(
             "A verification email was already sent. Check your inbox",
             403,
@@ -190,14 +197,16 @@ export async function loginUserService(emailAddress, password) {
       }
 
       const { verificationToken, linkExpiryTime } = await resendEmailUtil(
-        user?.email_address,
+        user.id,
       );
       const verificationLink = `${process.env.CLIENT_ORIGIN}/verify?token=${verificationToken}`;
-      await sendSignupEmail(
-        `${user?.first_name} ${user?.last_name}`,
+      sendSignupEmail(
+        `${user.first_name} ${user.last_name}`,
         user.email_address,
         verificationLink,
         linkExpiryTime,
+      ).catch((emailError) =>
+        console.error("Resend verification email Error: ", emailError.message),
       );
 
       throw createAppError(
@@ -206,7 +215,7 @@ export async function loginUserService(emailAddress, password) {
       );
     }
 
-    return signAccessToken(user?.id, user?.email_address);
+    return signAccessToken({ id: user.id, email: user.email_address });
   } catch (error) {
     if (error.isAppError) {
       throw error;

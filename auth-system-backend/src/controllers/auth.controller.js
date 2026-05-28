@@ -110,13 +110,13 @@ export const loginUser = async (req, res, next) => {
     const { emailAddress, password } = req?.body || {};
 
     const normalizedEmail = emailAddress?.trim().toLowerCase();
-    const normalizedPassword = password?.trim();
+    const normalizedPassword = password || "";
 
     if (!normalizedEmail) {
       throw createAppError("Email address is required");
     }
 
-    if (!normalizedPassword) {
+    if (!normalizedPassword.trim()) {
       throw createAppError("Password cannot be empty", 400);
     }
 
@@ -132,7 +132,7 @@ export const loginUser = async (req, res, next) => {
       maxAge: 60 * 60 * 1000,
     });
 
-    return sendSuccessMessage(res, 200, "Login was successful");
+    sendSuccessMessage(res, 200, "Login was successful");
   } catch (error) {
     next(error);
   }
