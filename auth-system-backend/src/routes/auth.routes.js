@@ -75,7 +75,7 @@
 
 /**
  * @swagger
- * /api/auth/login:
+ * /api/v1/auth/login:
  *   post:
  *     summary: Login user
  *     tags: [Auth]
@@ -106,7 +106,7 @@
 
 /**
  * @swagger
- * /api/auth/logout:
+ * /api/v1/auth/logout:
  *   post:
  *     summary: Logout user (clears auth cookie)
  *     tags: [Auth]
