@@ -93,7 +93,7 @@ export async function verifyEmailUser(token) {
   return user;
 }
 
-export async function logUserIn(emailAddress, password) {
+export async function loginUserService(emailAddress, password) {
   const [rows] = await db.execute(
     "SELECT id, first_name,last_name, email_address, email_address_verified, password_hash, verification_token_expires_at FROM users WHERE email_address = ?",
     [emailAddress],

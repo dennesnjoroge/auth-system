@@ -1,7 +1,7 @@
 import {
   createUser,
   verifyEmailUser,
-  logUserIn,
+  loginUserService,
 } from "../services/auth.service.js";
 import {
   validateRegisterInput,
@@ -110,7 +110,10 @@ export const loginUser = async (req, res) => {
   }
 
   try {
-    const accessToken = await logUserIn(normalizedEmail, normalizedPassword);
+    const accessToken = await loginUserService(
+      normalizedEmail,
+      normalizedPassword,
+    );
 
     await res.cookie("_at", accessToken, {
       httpOnly: true,
