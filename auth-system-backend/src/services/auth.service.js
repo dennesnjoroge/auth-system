@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import db from "../config/db.js";
 import jwt from "jsonwebtoken";
-import { recordPasswordChange } from "./passwordAlert.service.js";
+import { recordPasswordChange } from "./alert.service.js";
 import { sendOnboardingEmail, sendResetCodeEmail } from "./email.service.js";
 import { resendEmailUtil } from "../utils/mail.util.js";
 import { signAccessToken } from "../utils/token.util.js";
@@ -283,7 +283,7 @@ export const verifyResetCodeService = async (emailAddress, resetCode) => {
     const user = rows[0];
 
     const [codeRows] = await connection.execute(
-      `SELECT id, code_hash, expires_at FROM reset_codes WHERE user_id = ? AND code_hash IS NOT NULL FOR UPDATE`,
+      `SELECT code_hash, expires_at FROM reset_codes WHERE user_id = ? AND code_hash IS NOT NULL FOR UPDATE`,
       [user.id],
     );
 
@@ -322,14 +322,13 @@ export const verifyResetCodeService = async (emailAddress, resetCode) => {
     const resetTokenExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
     await connection.execute(
-      `INSERT into reset_tokens (reset_code_id, token_hash, expires_at) VALUES (?, ?, ?)`,
-      [code.id, resetTokenHash, resetTokenExpiresAt],
+      `INSERT into reset_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE token_hash = VALUES(token_hash), expires_at = VALUES(expires_at)`,
+      [user.id, resetTokenHash, resetTokenExpiresAt],
     );
 
-    await connection.execute(
-      `UPDATE reset_codes SET code_hash = ?, expires_at = ? WHERE user_id = ?`,
-      [null, null, user.id],
-    );
+    await connection.execute(`DELETE FROM reset_codes WHERE user_id = ?`, [
+      user.id,
+    ]);
 
     await connection.commit();
 
@@ -352,46 +351,74 @@ export const resetPasswordService = async (
   emailAddress,
   resetToken,
   newPassword,
+  req,
 ) => {
-  const [rows] = await db.execute(
-    `SELECT id, first_name, last_name, email_address, reset_token_hash, reset_token_expires_at FROM users WHERE email_address = ? LIMIT 1`,
-    [emailAddress],
-  );
+  const connection = await db.getConnection();
 
-  if (rows.length === 0) {
-    throw createAppError("Invalid reset request", 400);
+  try {
+    await connection.beginTransaction();
+    const [userRows] = await connection.execute(
+      `SELECT id, first_name, last_name FROM users WHERE email_address = ? FOR UPDATE`,
+      [emailAddress],
+    );
+
+    if (userRows.length === 0) {
+      throw createAppError("Invalid reset request", 400);
+    }
+
+    const user = userRows[0];
+
+    const [tokenRows] = await connection.execute(
+      `SELECT token_hash, expires_at FROM reset_tokens WHERE user_id = ?`,
+      [user.id],
+    );
+
+    if (tokenRows.length === 0) {
+      throw createAppError("Invalid reset request", 400);
+    }
+
+    const token = tokenRows[0];
+
+    if (new Date(token.expires_at).getTime() < Date.now()) {
+      throw createAppError("Reset token has expired", 401);
+    }
+
+    const clientTokenHash = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+
+    if (clientTokenHash !== token.token_hash) {
+      throw createAppError("Invalid reset token", 401);
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+    await connection.execute(
+      `UPDATE users SET password_hash = ? WHERE id = ?`,
+      [passwordHash, user.id],
+    );
+
+    const userId = user.id;
+    const changeMethod = "Manual";
+
+    await connection.execute(`DELETE FROM reset_tokens WHERE user_id = ?`, [
+      user.id,
+    ]);
+
+    await connection.commit();
+    recordPasswordChange({ userId, req, changeMethod });
+  } catch (error) {
+    await connection.rollback();
+    if (error.isAppError) {
+      throw error;
+    }
+
+    console.error("Reset password Service Error: ", error);
+    throw createAppError("Internal Server Error", 500);
+  } finally {
+    connection.release();
   }
-
-  const user = rows[0];
-
-  if (!user.reset_token_hash || !user.reset_token_expires_at) {
-    throw createAppError("Invalid reset request", 400);
-  }
-
-  if (new Date(user.reset_token_expires_at) < new Date()) {
-    throw createAppError("Reset token has expired", 400);
-  }
-
-  const submittedCodeHash = crypto
-    .createHash("sha256")
-    .update(resetToken)
-    .digest("hex");
-
-  if (submittedCodeHash !== user.reset_token_hash) {
-    throw createAppError("Invalid reset token", 400);
-  }
-
-  const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
-
-  await db.execute(
-    `UPDATE users SET password_hash = ?, reset_token_hash = NULL, reset_token_expires_at = NULL WHERE id = ?`,
-    [hashedPassword, user.id],
-  );
-
-  const userId = user.id;
-  const changeMethod = "Manual";
-
-  await recordPasswordChange({ userId, req, changeMethod });
 };
 
 export const changePasswordService = async (
