@@ -28,14 +28,14 @@ export const sendSignupEmail = async (
       html,
     });
   } catch (error) {
-    console.error("Critical email service error: ", error.message);
-    throw createAppError("Failed to send signup email", 500);
+    console.error("Critical signup email service error: ", error.message);
   }
 };
 
 export const sendResetCodeEmail = async (name, email, code, codeExpirytime) => {
   try {
     const html = resetCodeTemplate(name, code, codeExpirytime, email);
+
     await transporter.sendMail({
       from: `"Authentication System" <${process.env.EMAIL_USER}>`,
       to: email,
@@ -43,8 +43,7 @@ export const sendResetCodeEmail = async (name, email, code, codeExpirytime) => {
       html,
     });
   } catch (error) {
-    console.error(error);
-    throw new Error("Failed to send reset code");
+    console.error("Critical resetCode email service error: ", error);
   }
 };
 
@@ -58,8 +57,7 @@ export const sendOnboardingEmail = async (name, email) => {
       html,
     });
   } catch (error) {
-    console.error(error);
-    throw new Error("Failed to send reset code");
+    console.error("Critical Onboarding email service error: ", error.message);
   }
 };
 
@@ -87,8 +85,10 @@ export const sendPasswordChangedAlert = async ({
       html,
     });
   } catch (error) {
-    console.error(error);
-    throw new Error("Failed to send reset code");
+    console.error(
+      "Critical Password Change alert email service error: ",
+      error.message,
+    );
   }
 };
 
@@ -102,7 +102,9 @@ export const sendDeleteAccountEmail = async (name, email) => {
       html,
     });
   } catch (error) {
-    console.error(error);
-    throw new Error("Failed to send account delete alert");
+    console.error(
+      "Critical Account Deletion email notification service error: ",
+      error.message,
+    );
   }
 };

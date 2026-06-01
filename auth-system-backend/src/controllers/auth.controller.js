@@ -2,7 +2,7 @@ import {
   registerUserService,
   verifyEmailService,
   loginUserService,
-  forgotPasswordService,
+  sendResetCodeService,
   verifyResetCodeService,
   resetPasswordService,
   changePasswordService,
@@ -156,7 +156,7 @@ export const forgotPassword = async (req, res, next) => {
       throw createAppError("Email address is required", 400);
     }
 
-    await forgotPasswordService(normalizedEmailAddress);
+    await sendResetCodeService(normalizedEmailAddress);
 
     return res.status(200).json({
       message:
@@ -174,14 +174,20 @@ export const verifyResetCode = async (req, res, next) => {
     const normalizedEmailAddress = emailAddress?.trim().toLowerCase();
     const normalizedResetCode = resetCode?.trim();
 
-    if (!normalizedEmailAddress || !normalizedResetCode) {
-      throw createAppError(
-        "Both email address and reset code are required",
-        400,
-      );
+    if (!normalizedEmailAddress) {
+      throw createAppError("Email address is required", 400);
     }
 
-    await verifyResetCodeService(normalizedEmailAddress, normalizedResetCode);
+    if (!normalizedResetCode) {
+      throw createAppError("Reset code cannot be empty", 400);
+    }
+
+    const { resetToken } = await verifyResetCodeService(
+      normalizedEmailAddress,
+      normalizedResetCode,
+    );
+
+    console.log(resetToken);
 
     return sendSuccessMessage(res, 200, "Reset code verified successfully");
   } catch (error) {
@@ -192,6 +198,18 @@ export const verifyResetCode = async (req, res, next) => {
 export const resetPassword = async (req, res, next) => {
   try {
     const { emailAddress, resetToken, newPassword } = req?.body || {};
+
+    if (!emailAddress) {
+      throw createAppError("Email address is required", 400);
+    }
+
+    if (!resetToken) {
+      throw createAppError("Reset token is required", 400);
+    }
+
+    if (!newPassword) {
+      throw createAppError("Password cannot be empty", 400);
+    }
 
     await resetPasswordService(emailAddress, resetToken, newPassword);
 

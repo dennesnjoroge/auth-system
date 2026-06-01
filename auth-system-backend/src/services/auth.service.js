@@ -226,7 +226,7 @@ export async function loginUserService(emailAddress, password) {
   }
 }
 
-export const forgotPasswordService = async (emailAddress) => {
+export const sendResetCodeService = async (emailAddress) => {
   try {
     const [rows] = await db.execute(
       `SELECT id, first_name, last_name FROM users WHERE email_address = ?`,
@@ -245,11 +245,11 @@ export const forgotPasswordService = async (emailAddress) => {
     const expiresAt = new Date(Date.now() + codeExpiryTime * 60 * 1000);
 
     await db.execute(
-      `UPDATE users SET reset_code_hash = ?, reset_code_expires_at = ? WHERE id = ?`,
-      [codeHash, expiresAt, user.id],
+      `INSERT INTO reset_codes (user_id, code_hash, expires_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE code_hash = VALUES(code_hash), expires_at = VALUES(expires_at)`,
+      [user.id, codeHash, expiresAt],
     );
 
-    await sendResetCodeEmail(
+    sendResetCodeEmail(
       `${user.first_name} ${user.last_name}`,
       emailAddress,
       code,
@@ -266,9 +266,13 @@ export const forgotPasswordService = async (emailAddress) => {
 };
 
 export const verifyResetCodeService = async (emailAddress, resetCode) => {
+  const connection = await db.getConnection();
+
   try {
-    const [rows] = await db.execute(
-      `SELECT id, reset_code_hash, reset_code_expires_at FROM users WHERE email_address = ? LIMIT 1`,
+    await connection.beginTransaction();
+
+    const [rows] = await connection.execute(
+      `SELECT id FROM users WHERE email_address = ?`,
       [emailAddress],
     );
 
@@ -278,19 +282,25 @@ export const verifyResetCodeService = async (emailAddress, resetCode) => {
 
     const user = rows[0];
 
-    if (!user.reset_code_hash || !user.reset_code_expires_at) {
+    const [codeRows] = await connection.execute(
+      `SELECT id, code_hash, expires_at FROM reset_codes WHERE user_id = ? AND code_hash IS NOT NULL FOR UPDATE`,
+      [user.id],
+    );
+
+    if (codeRows.length === 0) {
       throw createAppError("Invalid reset request", 400);
     }
 
-    if (new Date(user.reset_code_expires_at) < new Date()) {
-      await db.execute(
-        `UPDATE users SET reset_code_hash = ?, reset_code_expires_at = ? WHERE id = ?`,
-        [null, null, user.id],
-      );
+    const code = codeRows[0];
+
+    if (new Date(code.expires_at).getTime() < Date.now()) {
+      await connection.execute(`DELETE FROM reset_codes WHERE user_id = ?`, [
+        user.id,
+      ]);
 
       throw createAppError(
-        "Reset code has expired. Please request an new one.",
-        400,
+        "Reset code has expired. Please request a new one.",
+        401,
       );
     }
 
@@ -299,7 +309,7 @@ export const verifyResetCodeService = async (emailAddress, resetCode) => {
       .update(resetCode)
       .digest("hex");
 
-    if (submittedCodeHash !== user.reset_code_hash) {
+    if (submittedCodeHash !== code.code_hash) {
       throw createAppError("Invalid reset code", 400);
     }
 
@@ -311,17 +321,30 @@ export const verifyResetCodeService = async (emailAddress, resetCode) => {
 
     const resetTokenExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
-    await db.execute(
-      `UPDATE users SET reset_code_hash = ?, reset_code_expires_at = ?, reset_token_hash = ?, reset_token_expires_at = ? WHERE id = ?`,
-      [null, null, resetTokenHash, resetTokenExpiresAt, user.id],
+    await connection.execute(
+      `INSERT into reset_tokens (reset_code_id, token_hash, expires_at) VALUES (?, ?, ?)`,
+      [code.id, resetTokenHash, resetTokenExpiresAt],
     );
+
+    await connection.execute(
+      `UPDATE reset_codes SET code_hash = ?, expires_at = ? WHERE user_id = ?`,
+      [null, null, user.id],
+    );
+
+    await connection.commit();
+
+    return { resetToken };
   } catch (error) {
+    await connection.rollback();
+
     if (error.isAppError) {
       throw error;
     }
 
     console.error("Verify Reset Code Service Critical Error: ", error.message);
     throw createAppError("Internal Server Error");
+  } finally {
+    connection.release();
   }
 };
 

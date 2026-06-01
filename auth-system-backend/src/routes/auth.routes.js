@@ -148,7 +148,7 @@
 
 /**
  * @swagger
- * /api/auth/verify-reset-code:
+ * /api/v1/auth/verify-reset-code:
  *   post:
  *     summary: Verify password reset code
  *     tags: [Auth]
