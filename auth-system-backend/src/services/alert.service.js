@@ -6,7 +6,7 @@ import {
 import db from "../config/db.js";
 import { sendPasswordChangedAlert } from "./email.service.js";
 
-export async function recordPasswordChange({ userId, req, changeMethod }) {
+export const recordPasswordChange = async ({ userId, req, changeMethod }) => {
   const ipAddress = getClientIP(req);
   const userAgent = req.headers["user-agent"];
   const deviceInfo = parseUserAgent(userAgent);
@@ -27,7 +27,7 @@ export async function recordPasswordChange({ userId, req, changeMethod }) {
   const email = rows[0].email_address;
   const name = `${rows[0].first_name} ${rows[0].last_name}`;
 
-  await sendPasswordChangedAlert({
+  sendPasswordChangedAlert({
     email,
     name,
     timestamp: new Date(),
@@ -35,4 +35,4 @@ export async function recordPasswordChange({ userId, req, changeMethod }) {
     deviceInfo,
     location,
   });
-}
+};
