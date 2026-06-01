@@ -134,7 +134,7 @@ export async function verifyEmailService(verificationToken) {
     await connection.commit();
 
     try {
-      await sendOnboardingEmail(
+      sendOnboardingEmail(
         `${user.first_name} ${user.last_name}`,
         user.email_address,
       );

@@ -204,7 +204,7 @@ export const accountDeletedTemplate = (name, email) => {
 
               <tr>
                 <td style="font-size:12px; color:#94a3b8; padding-top:5px;">
-                  &copy; ${new Date().getFullYear()} Auth System. All rights reserved.
+                  &copy; ${new Date().getFullYear()} Support Team Authentication System. All rights reserved.
                 </td>
               </tr>
 
@@ -294,7 +294,7 @@ export const onboardingTemplate = (name, email) => {
                     text-align: center;
                   "
                 >
-                  &copy; ${new Date().getFullYear()} Auth System. All rights reserved.
+                  &copy; ${new Date().getFullYear()} Authentication System. All rights reserved.
                 </td>
               </tr>
             </table>
@@ -449,7 +449,7 @@ export const passwordChangeTemplate = ({
                     text-align: center;
                   "
                 >
-                  &copy; ${new Date().getFullYear()} Auth System. All rights reserved.
+                  &copy; ${new Date().getFullYear()} Security Team Authentication System. All rights reserved.
                 </td>
               </tr>
             </table>
@@ -543,7 +543,7 @@ export const resetCodeTemplate = (name, code, codeExpirytime, email) => {
                     text-align: center;
                   "
                 >
-                  &copy; ${new Date().getFullYear()} Auth System. All rights reserved.
+                  &copy; ${new Date().getFullYear()} Authentication System. All rights reserved.
                 </td>
               </tr>
             </table>

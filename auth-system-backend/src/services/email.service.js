@@ -37,7 +37,7 @@ export const sendResetCodeEmail = async (name, email, code, codeExpirytime) => {
   try {
     const html = resetCodeTemplate(name, code, codeExpirytime, email);
     await transporter.sendMail({
-      from: `"Auth System" <${process.env.EMAIL_USER}>`,
+      from: `"Authentication System" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: "Your Password Reset Code",
       html,
@@ -52,7 +52,7 @@ export const sendOnboardingEmail = async (name, email) => {
   try {
     const html = onboardingTemplate(name, email);
     await transporter.sendMail({
-      from: `"Onboarding Auth System" <${process.env.EMAIL_USER}>`,
+      from: `"Onboarding Authentication System" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: `Welcome onboard, ${name}`,
       html,
@@ -81,7 +81,7 @@ export const sendPasswordChangedAlert = async ({
       email,
     });
     await transporter.sendMail({
-      from: `"Security Auth System" <${process.env.EMAIL_USER}>`,
+      from: `"Security Authentication System" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: `Security Alert!`,
       html,
@@ -96,7 +96,7 @@ export const sendDeleteAccountEmail = async (name, email) => {
   try {
     const html = accountDeletedTemplate(name, email);
     await transporter.sendMail({
-      from: `"Support Team Auth System" <${process.env.EMAIL_USER}>`,
+      from: `"Support Authentication System" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: `Account Deletion`,
       html,
