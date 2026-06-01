@@ -188,7 +188,7 @@
 
 /**
  * @swagger
- * /api/auth/reset-password:
+ * /api/v1/auth/reset-password:
  *   post:
  *     summary: Reset user password using reset token
  *     tags: [Auth]
@@ -199,16 +199,8 @@
  *           schema:
  *             type: object
  *             required:
- *               - emailAddress
- *               - resetToken
  *               - newPassword
  *             properties:
- *               emailAddress:
- *                 type: string
- *                 example: john@example.com
- *               resetToken:
- *                 type: string
- *                 example: "bf9e659e7e0cce1f26b20bdd392b6d7ce77574efb32bd5a02bb00afe76530335"
  *               newPassword:
  *                 type: string
  *                 example: "NewStrongPass123!"

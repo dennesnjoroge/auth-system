@@ -374,7 +374,7 @@ export const resetPasswordService = async (resetToken, newPassword, req) => {
     }
 
     const [userRows] = await connection.execute(
-      `SELECT first_name, last_name FROM users WHERE user_id = ? FOR UPDATE`,
+      `SELECT first_name, last_name FROM users WHERE id = ? FOR UPDATE`,
       [token.user_id],
     );
 
@@ -388,7 +388,7 @@ export const resetPasswordService = async (resetToken, newPassword, req) => {
 
     await connection.execute(
       `UPDATE users SET password_hash = ? WHERE id = ?`,
-      [passwordHash, user.id],
+      [passwordHash, token.user_id],
     );
 
     const userId = token.user_id;
