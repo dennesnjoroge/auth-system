@@ -187,6 +187,10 @@ export const verifyResetCode = async (req, res, next) => {
       normalizedResetCode,
     );
 
+    res.clearCookie("_rt", {
+      path: "/api/v1/auth/reset-password",
+    });
+
     res.cookie("_rt", resetToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -194,8 +198,6 @@ export const verifyResetCode = async (req, res, next) => {
       maxAge: 15 * 60 * 1000,
       path: "/api/v1/auth/reset-password",
     });
-
-    console.log(resetToken);
 
     return sendSuccessMessage(res, 200, "Reset code verified successfully");
   } catch (error) {
@@ -205,21 +207,19 @@ export const verifyResetCode = async (req, res, next) => {
 
 export const resetPassword = async (req, res, next) => {
   try {
-    const { emailAddress, resetToken, newPassword } = req?.body || {};
+    const resetToken = req?.cookies._rt || undefined;
 
-    if (!emailAddress) {
-      throw createAppError("Email address is required", 400);
-    }
+    const { newPassword } = req?.body || {};
 
     if (!resetToken) {
-      throw createAppError("Reset token is required", 400);
+      throw createAppError("Invalid reset session", 400);
     }
 
     if (!newPassword) {
       throw createAppError("Password cannot be empty", 400);
     }
 
-    await resetPasswordService(emailAddress, resetToken, newPassword, req);
+    await resetPasswordService(resetToken, newPassword, req);
 
     return sendSuccessMessage(res, 200, "Password reset successful");
   } catch (error) {

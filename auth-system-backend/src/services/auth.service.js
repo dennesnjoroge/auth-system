@@ -347,30 +347,20 @@ export const verifyResetCodeService = async (emailAddress, resetCode) => {
   }
 };
 
-export const resetPasswordService = async (
-  emailAddress,
-  resetToken,
-  newPassword,
-  req,
-) => {
+export const resetPasswordService = async (resetToken, newPassword, req) => {
   const connection = await db.getConnection();
 
   try {
     await connection.beginTransaction();
-    const [userRows] = await connection.execute(
-      `SELECT id, first_name, last_name FROM users WHERE email_address = ? FOR UPDATE`,
-      [emailAddress],
-    );
 
-    if (userRows.length === 0) {
-      throw createAppError("Invalid reset request", 400);
-    }
-
-    const user = userRows[0];
+    const clientTokenHash = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
 
     const [tokenRows] = await connection.execute(
-      `SELECT token_hash, expires_at FROM reset_tokens WHERE user_id = ?`,
-      [user.id],
+      `SELECT user_id, expires_at FROM reset_tokens WHERE token_hash = ?`,
+      [clientTokenHash],
     );
 
     if (tokenRows.length === 0) {
@@ -383,14 +373,16 @@ export const resetPasswordService = async (
       throw createAppError("Reset token has expired", 401);
     }
 
-    const clientTokenHash = crypto
-      .createHash("sha256")
-      .update(resetToken)
-      .digest("hex");
+    const [userRows] = await connection.execute(
+      `SELECT first_name, last_name FROM users WHERE user_id = ? FOR UPDATE`,
+      [token.user_id],
+    );
 
-    if (clientTokenHash !== token.token_hash) {
-      throw createAppError("Invalid reset token", 401);
+    if (userRows.length === 0) {
+      throw createAppError("Invalid reset request", 400);
     }
+
+    const user = userRows[0];
 
     const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
 
@@ -399,11 +391,11 @@ export const resetPasswordService = async (
       [passwordHash, user.id],
     );
 
-    const userId = user.id;
+    const userId = token.user_id;
     const changeMethod = "Manual";
 
     await connection.execute(`DELETE FROM reset_tokens WHERE user_id = ?`, [
-      user.id,
+      userId,
     ]);
 
     await connection.commit();
