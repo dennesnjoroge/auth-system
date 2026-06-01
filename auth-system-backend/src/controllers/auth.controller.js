@@ -20,7 +20,7 @@ import { sendSuccessMessage } from "../utils/success.util.js";
 import { createAppError } from "../utils/error.util.js";
 import { sendErrorMessage } from "../utils/error.util.js";
 
-import { recordPasswordChange } from "../services/passwordAlert.service.js";
+import { recordPasswordChange } from "../services/alert.service.js";
 import validator from "validator";
 
 const saltRounds = 10;
@@ -187,6 +187,14 @@ export const verifyResetCode = async (req, res, next) => {
       normalizedResetCode,
     );
 
+    res.cookie("_rt", resetToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 15 * 60 * 1000,
+      path: "/api/v1/auth/reset-password",
+    });
+
     console.log(resetToken);
 
     return sendSuccessMessage(res, 200, "Reset code verified successfully");
@@ -211,7 +219,7 @@ export const resetPassword = async (req, res, next) => {
       throw createAppError("Password cannot be empty", 400);
     }
 
-    await resetPasswordService(emailAddress, resetToken, newPassword);
+    await resetPasswordService(emailAddress, resetToken, newPassword, req);
 
     return sendSuccessMessage(res, 200, "Password reset successful");
   } catch (error) {
