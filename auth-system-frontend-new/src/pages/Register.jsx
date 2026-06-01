@@ -10,8 +10,6 @@ function Register() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
-    console.log(firstName);
   };
 
   return (
@@ -42,6 +40,7 @@ function Register() {
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
             placeholder="John"
+            required
           />
         </div>
 
@@ -59,6 +58,7 @@ function Register() {
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
             placeholder="Doe"
+            required
           />
         </div>
 
@@ -76,6 +76,7 @@ function Register() {
             value={emailAddress}
             onChange={(e) => setEmailAddress(e.target.value)}
             placeholder="example@mail.com"
+            required
           />
         </div>
 
@@ -93,6 +94,7 @@ function Register() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="********"
+            required
           />
         </div>
 
@@ -108,8 +110,9 @@ function Register() {
             type="password"
             className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-black"
             value={repeatPassword}
-            onChange={(e) => e.target.value}
+            onChange={(e) => setRepeatPassword(e.target.value)}
             placeholder="********"
+            required
           />
         </div>
 
