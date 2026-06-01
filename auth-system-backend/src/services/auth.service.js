@@ -4,11 +4,11 @@ import db from "../config/db.js";
 import jwt from "jsonwebtoken";
 import { recordPasswordChange } from "./passwordAlert.service.js";
 import { sendOnboardingEmail, sendResetCodeEmail } from "./email.service.js";
-import { resendEmailUtil } from "../utils/mail.js";
-import { signAccessToken } from "../utils/tokens.js";
+import { resendEmailUtil } from "../utils/mail.util.js";
+import { signAccessToken } from "../utils/token.util.js";
 import { sendSignupEmail } from "./email.service.js";
-import { createAppError } from "../utils/error.js";
-import { sendErrorMessage } from "../utils/error.js";
+import { createAppError } from "../utils/error.util.js";
+import { sendErrorMessage } from "../utils/error.util.js";
 
 const SALT_ROUNDS = 10;
 

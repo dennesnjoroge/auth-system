@@ -1,10 +1,12 @@
 import transporter from "./email.transporter.js";
-import { createAppError } from "../utils/error.js";
-import verifyEmailTemplate from "./templates/verifyEmailTemplate.js";
-import { resetCodeTemplate } from "./templates/resetCodeTemplate.js";
-import { onboardingTemplate } from "./templates/onboardingTemplate.js";
-import { getPasswordChangedEmailTemplate } from "./templates/passwordChangedTemplate.js";
-import { accountDeletedTemplate } from "./templates/accountDeleteTemplate.js";
+import { createAppError } from "../utils/error.util.js";
+import {
+  verifyEmailTemplate,
+  accountDeletedTemplate,
+  onboardingTemplate,
+  passwordChangeTemplate,
+  resetCodeTemplate,
+} from "./templates/email.js";
 
 export const sendSignupEmail = async (
   fullName,
@@ -20,7 +22,7 @@ export const sendSignupEmail = async (
       linkExpiryTime,
     );
     await transporter.sendMail({
-      from: `"Auth System" <${process.env.EMAIL_USER}>`,
+      from: `"Authentication System" <${process.env.EMAIL_USER}>`,
       to: emailAddress,
       subject: "Verify your Email",
       html,
@@ -70,7 +72,7 @@ export const sendPasswordChangedAlert = async ({
   location,
 }) => {
   try {
-    const html = getPasswordChangedEmailTemplate({
+    const html = passwordChangeTemplate({
       name,
       timestamp,
       ipAddress,

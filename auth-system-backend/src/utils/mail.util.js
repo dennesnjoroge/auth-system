@@ -1,3 +1,4 @@
+// mail utility functions
 import crypto from "crypto";
 import db from "../config/db.js";
 

@@ -7,7 +7,6 @@ import {
   resetPasswordService,
   changePasswordService,
 } from "../services/auth.service.js";
-import { validateRegisterInput } from "../validators/auth.validator.js";
 import {
   sendSignupEmail,
   sendResetCodeEmail,
@@ -16,10 +15,10 @@ import {
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import db from "../config/db.js";
-import { passwordRegex } from "../utils/password.js";
-import { sendSuccessMessage } from "../utils/success.js";
-import { createAppError } from "../utils/error.js";
-import { sendErrorMessage } from "../utils/error.js";
+import { passwordRegex } from "../utils/password.util.js";
+import { sendSuccessMessage } from "../utils/success.util.js";
+import { createAppError } from "../utils/error.util.js";
+import { sendErrorMessage } from "../utils/error.util.js";
 
 import { recordPasswordChange } from "../services/passwordAlert.service.js";
 import validator from "validator";

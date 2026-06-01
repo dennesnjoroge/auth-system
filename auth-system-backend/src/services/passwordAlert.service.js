@@ -2,7 +2,7 @@ import {
   getClientIP,
   parseUserAgent,
   getLocationFromIP,
-} from "../utils/ipUtils.js";
+} from "../utils/ip.util.js";
 import db from "../config/db.js";
 import { sendPasswordChangedAlert } from "./email.service.js";
 

@@ -1,3 +1,4 @@
+// tokens utility functions
 import jwt from "jsonwebtoken";
 
 export const signAccessToken = (id, email) => {

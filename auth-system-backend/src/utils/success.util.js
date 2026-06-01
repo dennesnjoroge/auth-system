@@ -1,3 +1,4 @@
+// success utility functions
 export const sendSuccessMessage = (res, statusCode, message) => {
   return res.status(statusCode).json({
     success: true,
