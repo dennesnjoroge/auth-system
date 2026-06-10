@@ -12,7 +12,7 @@ import { sendErrorMessage } from "../utils/error.util.js";
 
 const SALT_ROUNDS = 10;
 
-export const registerUserService = async ({
+const register = async ({
   normalizedFirstName: firstName,
   normalizedLastName: lastName,
   normalizedEmailAddress: emailAddress,
@@ -85,7 +85,7 @@ export const registerUserService = async ({
   }
 };
 
-export async function verifyEmailService(verificationToken) {
+const verifyEmail = async (verificationToken) => {
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
@@ -158,9 +158,9 @@ export async function verifyEmailService(verificationToken) {
   } finally {
     connection.release();
   }
-}
+};
 
-export async function loginUserService(emailAddress, password) {
+const login = async (emailAddress, password) => {
   try {
     const [rows] = await db.execute(
       "SELECT id, first_name, last_name, email_address, email_verified, password_hash FROM users WHERE email_address = ?",
@@ -224,9 +224,9 @@ export async function loginUserService(emailAddress, password) {
     console.error("Login Service Critical Error: ", error.message);
     throw createAppError("Internal Server Error", 500);
   }
-}
+};
 
-export const sendResetCodeService = async (emailAddress) => {
+const sendResetCode = async (emailAddress) => {
   try {
     const [rows] = await db.execute(
       `SELECT id, first_name, last_name FROM users WHERE email_address = ?`,
@@ -265,7 +265,7 @@ export const sendResetCodeService = async (emailAddress) => {
   }
 };
 
-export const verifyResetCodeService = async (emailAddress, resetCode) => {
+const verifyResetCode = async (emailAddress, resetCode) => {
   const connection = await db.getConnection();
 
   try {
@@ -347,7 +347,7 @@ export const verifyResetCodeService = async (emailAddress, resetCode) => {
   }
 };
 
-export const resetPasswordService = async (resetToken, newPassword, req) => {
+const resetPassword = async (resetToken, newPassword, req) => {
   const connection = await db.getConnection();
 
   try {
@@ -413,11 +413,7 @@ export const resetPasswordService = async (resetToken, newPassword, req) => {
   }
 };
 
-export const changePasswordService = async (
-  currentPassword,
-  newPassword,
-  userId,
-) => {
+const changePassword = async (currentPassword, newPassword, userId) => {
   try {
     const [rows] = await db.execute(
       `SELECT password_hash FROM users WHERE id = ?`,
@@ -453,4 +449,14 @@ export const changePasswordService = async (
     console.error("Change Password Service Critical Error: ", error.message);
     throw createAppError("Internal Server Error", 500);
   }
+};
+
+export default {
+  register,
+  verifyEmail,
+  login,
+  sendResetCode,
+  verifyResetCode,
+  resetPassword,
+  changePassword,
 };

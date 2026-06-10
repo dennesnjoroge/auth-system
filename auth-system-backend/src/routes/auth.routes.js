@@ -261,30 +261,21 @@
  *         description: Not authenticated
  */
 
+import authController from "../controllers/auth.controller.js";
+
 import express from "express";
 import { auth } from "../auth/auth.js";
-import {
-  registerUser,
-  verifyEmail,
-  loginUser,
-  logoutUser,
-  forgotPassword,
-  verifyResetCode,
-  resetPassword,
-  changePassword,
-  checkAuthToken,
-} from "../controllers/auth.controller.js";
 
 const router = express.Router();
 
-router.post("/register", registerUser);
-router.post("/verify", verifyEmail);
-router.post("/login", loginUser);
-router.post("/logout", logoutUser);
-router.post("/forgot", forgotPassword);
-router.post("/verify-reset-code", verifyResetCode);
-router.post("/reset-password", resetPassword);
-router.post("/change-password", auth, changePassword);
-router.get("/me", checkAuthToken);
+router.post("/register", authController.register);
+router.post("/verify", authController.verifyEmail);
+router.post("/login", authController.login);
+router.post("/logout", authController.logout);
+router.post("/forgot", authController.forgotPassword);
+router.post("/verify-reset-code", authController.verifyResetCode);
+router.post("/reset-password", authController.resetPassword);
+router.post("/change-password", auth, authController.changePassword);
+//router.get("/me", checkAuthToken);
 
 export default router;
