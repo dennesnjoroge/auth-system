@@ -1,16 +1,12 @@
-import {
-  getClientIP,
-  parseUserAgent,
-  getLocationFromIP,
-} from "../utils/ip.util.js";
+import utils from "../utils/utils.js";
 import db from "../config/db.js";
-import { sendPasswordChangedAlert } from "./email.service.js";
+import emailService from "./email.service.js";
 
-export const recordPasswordChange = async ({ userId, req, changeMethod }) => {
-  const ipAddress = getClientIP(req);
+const recordPasswordChange = async ({ userId, req, changeMethod }) => {
+  const ipAddress = utils.getClientIP(req);
   const userAgent = req.headers["user-agent"];
-  const deviceInfo = parseUserAgent(userAgent);
-  const location = await getLocationFromIP(ipAddress);
+  const deviceInfo = utils.parseUserAgent(userAgent);
+  const location = await utils.getLocationFromIP(ipAddress);
 
   await db.execute(
     `INSERT INTO password_change_history 
@@ -27,7 +23,7 @@ export const recordPasswordChange = async ({ userId, req, changeMethod }) => {
   const email = rows[0].email_address;
   const name = `${rows[0].first_name} ${rows[0].last_name}`;
 
-  sendPasswordChangedAlert({
+  emailService.passwordChangedEmail({
     email,
     name,
     timestamp: new Date(),
@@ -36,3 +32,5 @@ export const recordPasswordChange = async ({ userId, req, changeMethod }) => {
     location,
   });
 };
+
+export default { recordPasswordChange };

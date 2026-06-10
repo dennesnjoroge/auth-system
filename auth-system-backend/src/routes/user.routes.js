@@ -82,7 +82,7 @@ import express from "express";
 import { auth } from "../auth/auth.js";
 import db from "../config/db.js";
 import jwt from "jsonwebtoken";
-import { sendDeleteAccountEmail } from "../services/email.service.js";
+import emailService from "../services/email.service.js";
 
 const router = express.Router();
 
@@ -185,8 +185,7 @@ router.post("/delete-account", auth, async (req, res) => {
     const name = `${currentUser.first_name} ${currentUser.last_name}`;
     const email = currentUser.email_address;
 
-    // send deletion email here --
-    await sendDeleteAccountEmail(name, email);
+    await emailService.deleteAccountEmail(name, email);
 
     return res.status(200).json({ message: "Account deleted successfully" });
   } catch (error) {

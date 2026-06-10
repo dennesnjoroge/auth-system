@@ -1,19 +1,9 @@
-import authService from "../services/auth.service.js";
-
-import {
-  sendSignupEmail,
-  sendResetCodeEmail,
-  sendOnboardingEmail,
-} from "../services/email.service.js";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import db from "../config/db.js";
-import { passwordRegex } from "../utils/password.util.js";
-import { sendSuccessMessage } from "../utils/success.util.js";
-import { createAppError } from "../utils/error.util.js";
-import { sendErrorMessage } from "../utils/error.util.js";
+import utils from "../utils/utils.js";
+import authService from "../services/auth.service.js";
 
-import { recordPasswordChange } from "../services/alert.service.js";
 import validator from "validator";
 
 const saltRounds = 10;
@@ -28,15 +18,15 @@ const register = async (req, res, next) => {
     const normalizedPassword = password || "";
 
     if (!normalizedFirstName) {
-      throw createAppError("First name is required", 400);
+      throw utils.appError("First name is required", 400);
     }
 
     if (!normalizedLastName) {
-      throw createAppError("Last name is required", 400);
+      throw utils.appError("Last name is required", 400);
     }
 
     if (!validator.isEmail(normalizedEmailAddress)) {
-      throw createAppError("Invalid email address", 400);
+      throw utils.appError("Invalid email address", 400);
     }
     if (
       !normalizedFirstName ||
@@ -44,15 +34,15 @@ const register = async (req, res, next) => {
       !normalizedEmailAddress ||
       !normalizedPassword.trim()
     ) {
-      throw createAppError("Missing required fields", 400);
+      throw utils.appError("Missing required fields", 400);
     }
 
     if (normalizedPassword.length < 8) {
-      throw createAppError("Password must be at least 8 characters long", 400);
+      throw utils.appError("Password must be at least 8 characters long", 400);
     }
 
-    if (!passwordRegex(normalizedPassword)) {
-      throw createAppError(
+    if (!utils.passwordRegex(normalizedPassword)) {
+      throw utils.appError(
         "Password must include uppercase, lowercase, number, and special character",
         400,
       );
@@ -67,11 +57,11 @@ const register = async (req, res, next) => {
 
     await authService.register(registrationData);
 
-    return sendSuccessMessage(
-      res,
-      201,
-      "Registration successful. Please check your email to verify your account.",
-    );
+    return res.status(201).json({
+      status: "success",
+      message:
+        "Registration successful. Please check your email to verify your account.",
+    });
   } catch (error) {
     next(error);
   }
@@ -82,16 +72,15 @@ const verifyEmail = async (req, res, next) => {
     const { verificationToken } = req.body;
 
     if (!verificationToken) {
-      throw createAppError("Verification token is required", 400);
+      throw utils.appError("Verification token is required", 400);
     }
 
     await authService.verifyEmail(verificationToken);
 
-    return sendSuccessMessage(
-      res,
-      200,
-      "Email verified successfully. You can now log in",
-    );
+    return res.status(200).json({
+      status: "success",
+      message: "Email verified successfully. You can now log in",
+    });
   } catch (error) {
     next(error);
   }
@@ -105,11 +94,11 @@ const login = async (req, res, next) => {
     const normalizedPassword = password || "";
 
     if (!normalizedEmail) {
-      throw createAppError("Email address is required");
+      throw utils.appError("Email address is required");
     }
 
     if (!normalizedPassword.trim()) {
-      throw createAppError("Password cannot be empty", 400);
+      throw utils.appError("Password cannot be empty", 400);
     }
 
     const accessToken = await authService.login(
@@ -124,20 +113,30 @@ const login = async (req, res, next) => {
       maxAge: 60 * 60 * 1000,
     });
 
-    sendSuccessMessage(res, 200, "Login was successful");
+    return res.status(200).json({
+      status: "success",
+      message: "Login was successful",
+    });
   } catch (error) {
     next(error);
   }
 };
 
-const logout = async (req, res) => {
-  res.clearCookie("_at", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-  });
+const logout = async (req, res, next) => {
+  try {
+    res.clearCookie("_at", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    });
 
-  return sendSuccessMessage(res, 200, "Logged out successfully");
+    return res.status(200).json({
+      status: "success",
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 const forgotPassword = async (req, res, next) => {
@@ -146,7 +145,7 @@ const forgotPassword = async (req, res, next) => {
 
     const normalizedEmailAddress = emailAddress?.trim().toLowerCase();
     if (!normalizedEmailAddress) {
-      throw createAppError("Email address is required", 400);
+      throw utils.appError("Email address is required", 400);
     }
 
     await authService.sendResetCode(normalizedEmailAddress);
@@ -168,11 +167,11 @@ const verifyResetCode = async (req, res, next) => {
     const normalizedResetCode = resetCode?.trim();
 
     if (!normalizedEmailAddress) {
-      throw createAppError("Email address is required", 400);
+      throw utils.appError("Email address is required", 400);
     }
 
     if (!normalizedResetCode) {
-      throw createAppError("Reset code cannot be empty", 400);
+      throw utils.appError("Reset code cannot be empty", 400);
     }
 
     const { resetToken } = await authService.verifyResetCode(
@@ -192,7 +191,10 @@ const verifyResetCode = async (req, res, next) => {
       path: "/api/v1/auth/reset-password",
     });
 
-    return sendSuccessMessage(res, 200, "Reset code verified successfully");
+    return res.status(200).json({
+      status: "success",
+      message: "Reset code verified successfully",
+    });
   } catch (error) {
     next(error);
   }
@@ -205,16 +207,18 @@ const resetPassword = async (req, res, next) => {
     const { newPassword } = req?.body || {};
 
     if (!resetToken) {
-      throw createAppError("Invalid reset session", 400);
+      throw utils.appError("Invalid reset session", 400);
     }
 
     if (!newPassword) {
-      throw createAppError("Password cannot be empty", 400);
+      throw utils.appError("Password cannot be empty", 400);
     }
 
     await authService.resetPassword(resetToken, newPassword, req);
 
-    return sendSuccessMessage(res, 200, "Password reset successful");
+    return res
+      .status(200)
+      .json({ status: "success", message: "Password reset successful" });
   } catch (error) {
     next(error);
   }
@@ -227,7 +231,9 @@ const changePassword = async (req, res, next) => {
 
     await authService.changePassword(currentPassword, newPassword, userId);
 
-    return sendSuccessMessage(res, 200, "Password changed successfully");
+    return res
+      .status(200)
+      .json({ status: "success", message: "Password changed successfully" });
   } catch (error) {
     next(error);
   }

@@ -83,14 +83,9 @@ app.use((req, res) => {
 });
 
 app.use((error, req, res, next) => {
-  const statusCode = error.statusCode || 500;
-  const message = error.message || "Internal Server Error";
-
-  return res.status(statusCode).json({
-    success: false,
-    message: message,
-    status: statusCode,
-    errors: { message },
+  return res.status(error.statusCode).json({
+    status: "fail",
+    message: error.message,
   });
 });
 

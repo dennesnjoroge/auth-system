@@ -2,13 +2,9 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import db from "../config/db.js";
 import jwt from "jsonwebtoken";
-import { recordPasswordChange } from "./alert.service.js";
-import { sendOnboardingEmail, sendResetCodeEmail } from "./email.service.js";
-import { resendEmailUtil } from "../utils/mail.util.js";
-import { signAccessToken } from "../utils/token.util.js";
-import { sendSignupEmail } from "./email.service.js";
-import { createAppError } from "../utils/error.util.js";
-import { sendErrorMessage } from "../utils/error.util.js";
+import utils from "../utils/utils.js";
+import emailService from "./email.service.js";
+import alertService from "./alert.service.js";
 
 const SALT_ROUNDS = 10;
 
@@ -28,7 +24,7 @@ const register = async ({
     );
 
     if (rows.length > 0) {
-      throw createAppError(
+      throw utils.appError(
         "An account with that email address already exists",
         409,
       );
@@ -62,14 +58,16 @@ const register = async ({
 
     await connection.commit();
 
-    sendSignupEmail(
-      `${firstName} ${lastName}`,
-      emailAddress,
-      verificationLink,
-      linkExpiryTime,
-    ).catch((emailError) =>
-      console.error("Send SignupEmail Error: ", emailError),
-    );
+    emailService
+      .signupEmail(
+        `${firstName} ${lastName}`,
+        emailAddress,
+        verificationLink,
+        linkExpiryTime,
+      )
+      .catch((emailError) =>
+        console.error("Send SignupEmail Error: ", emailError),
+      );
 
     return;
   } catch (error) {
@@ -79,7 +77,7 @@ const register = async ({
     }
 
     console.error("Registration service Critical Error:", error.message);
-    throw createAppError("Internal Server Error", 500);
+    throw utils.appError("Internal Server Error", 500);
   } finally {
     connection.release();
   }
@@ -101,13 +99,13 @@ const verifyEmail = async (verificationToken) => {
     );
 
     if (rows.length === 0) {
-      throw createAppError("Invalid verification token", 400);
+      throw utils.appError("Invalid verification token", 400);
     }
 
     const token = rows[0];
 
     if (token.expires_at < new Date()) {
-      throw createAppError("Verification token has expired", 400);
+      throw utils.appError("Verification token has expired", 400);
     }
 
     await connection.execute(
@@ -126,7 +124,7 @@ const verifyEmail = async (verificationToken) => {
     );
 
     if (userRows.length === 0) {
-      throw createAppError("User with that token was not found", 404);
+      throw utils.appError("User with that token was not found", 404);
     }
 
     const user = userRows[0];
@@ -134,7 +132,7 @@ const verifyEmail = async (verificationToken) => {
     await connection.commit();
 
     try {
-      sendOnboardingEmail(
+      emailService.onboardingEmail(
         `${user.first_name} ${user.last_name}`,
         user.email_address,
       );
@@ -154,7 +152,7 @@ const verifyEmail = async (verificationToken) => {
       `Email Verification Service Critical Error: ${error.message}`,
     );
 
-    throw createAppError("Internal Server Error", 500);
+    throw utils.appError("Internal Server Error", 500);
   } finally {
     connection.release();
   }
@@ -168,7 +166,7 @@ const login = async (emailAddress, password) => {
     );
 
     if (rows.length === 0) {
-      throw createAppError("Incorrect email or password", 401);
+      throw utils.appError("Incorrect email or password", 401);
     }
 
     const user = rows[0];
@@ -176,7 +174,7 @@ const login = async (emailAddress, password) => {
     const comparePassword = await bcrypt.compare(password, user.password_hash);
 
     if (!comparePassword) {
-      throw createAppError("Incorrect email or password", 401);
+      throw utils.appError("Incorrect email or password", 401);
     }
 
     const [tokenRows] = await db.execute(
@@ -189,40 +187,45 @@ const login = async (emailAddress, password) => {
     if (user.email_verified === 0) {
       if (token?.expires_at) {
         if (new Date(token.expires_at).getTime() > Date.now()) {
-          throw createAppError(
+          throw utils.appError(
             "A verification email was already sent. Check your inbox",
             403,
           );
         }
       }
 
-      const { verificationToken, linkExpiryTime } = await resendEmailUtil(
+      const { verificationToken, linkExpiryTime } = await utils.resendEmail(
         user.id,
       );
       const verificationLink = `${process.env.CLIENT_ORIGIN}/verify?token=${verificationToken}`;
-      sendSignupEmail(
-        `${user.first_name} ${user.last_name}`,
-        user.email_address,
-        verificationLink,
-        linkExpiryTime,
-      ).catch((emailError) =>
-        console.error("Resend verification email Error: ", emailError.message),
-      );
+      emailService
+        .signupEmail(
+          `${user.first_name} ${user.last_name}`,
+          user.email_address,
+          verificationLink,
+          linkExpiryTime,
+        )
+        .catch((emailError) =>
+          console.error(
+            "Resend verification email Error: ",
+            emailError.message,
+          ),
+        );
 
-      throw createAppError(
+      throw utils.appError(
         "Email not verified. We have sent a new link to your inbox",
         403,
       );
     }
 
-    return signAccessToken({ id: user.id, email: user.email_address });
+    return utils.signAccessToken({ id: user.id, email: user.email_address });
   } catch (error) {
     if (error.isAppError) {
       throw error;
     }
 
     console.error("Login Service Critical Error: ", error.message);
-    throw createAppError("Internal Server Error", 500);
+    throw utils.appError("Internal Server Error", 500);
   }
 };
 
@@ -249,7 +252,7 @@ const sendResetCode = async (emailAddress) => {
       [user.id, codeHash, expiresAt],
     );
 
-    sendResetCodeEmail(
+    emailService.resetCodeEmail(
       `${user.first_name} ${user.last_name}`,
       emailAddress,
       code,
@@ -261,7 +264,7 @@ const sendResetCode = async (emailAddress) => {
     }
 
     console.error("Critical Forgot password service error", error.message);
-    throw createAppError("Internal Server Error", 500);
+    throw utils.appError("Internal Server Error", 500);
   }
 };
 
@@ -277,7 +280,7 @@ const verifyResetCode = async (emailAddress, resetCode) => {
     );
 
     if (rows.length === 0) {
-      throw createAppError("Invalid reset request", 400);
+      throw utils.appError("Invalid reset request", 400);
     }
 
     const user = rows[0];
@@ -288,7 +291,7 @@ const verifyResetCode = async (emailAddress, resetCode) => {
     );
 
     if (codeRows.length === 0) {
-      throw createAppError("Invalid reset request", 400);
+      throw utils.appError("Invalid reset request", 400);
     }
 
     const code = codeRows[0];
@@ -298,7 +301,7 @@ const verifyResetCode = async (emailAddress, resetCode) => {
         user.id,
       ]);
 
-      throw createAppError(
+      throw utils.appError(
         "Reset code has expired. Please request a new one.",
         401,
       );
@@ -310,7 +313,7 @@ const verifyResetCode = async (emailAddress, resetCode) => {
       .digest("hex");
 
     if (submittedCodeHash !== code.code_hash) {
-      throw createAppError("Invalid reset code", 400);
+      throw utils.appError("Invalid reset code", 400);
     }
 
     const resetToken = crypto.randomBytes(32).toString("hex");
@@ -341,7 +344,7 @@ const verifyResetCode = async (emailAddress, resetCode) => {
     }
 
     console.error("Verify Reset Code Service Critical Error: ", error.message);
-    throw createAppError("Internal Server Error");
+    throw utils.appError("Internal Server Error");
   } finally {
     connection.release();
   }
@@ -364,13 +367,13 @@ const resetPassword = async (resetToken, newPassword, req) => {
     );
 
     if (tokenRows.length === 0) {
-      throw createAppError("Invalid reset request", 400);
+      throw utils.appError("Invalid reset request", 400);
     }
 
     const token = tokenRows[0];
 
     if (new Date(token.expires_at).getTime() < Date.now()) {
-      throw createAppError("Reset token has expired", 401);
+      throw utils.appError("Reset token has expired", 401);
     }
 
     const [userRows] = await connection.execute(
@@ -379,7 +382,7 @@ const resetPassword = async (resetToken, newPassword, req) => {
     );
 
     if (userRows.length === 0) {
-      throw createAppError("Invalid reset request", 400);
+      throw utils.appError("Invalid reset request", 400);
     }
 
     const user = userRows[0];
@@ -399,7 +402,7 @@ const resetPassword = async (resetToken, newPassword, req) => {
     ]);
 
     await connection.commit();
-    recordPasswordChange({ userId, req, changeMethod });
+    alertService.recordPasswordChange({ userId, req, changeMethod });
   } catch (error) {
     await connection.rollback();
     if (error.isAppError) {
@@ -407,7 +410,7 @@ const resetPassword = async (resetToken, newPassword, req) => {
     }
 
     console.error("Reset password Service Error: ", error);
-    throw createAppError("Internal Server Error", 500);
+    throw utils.appError("Internal Server Error", 500);
   } finally {
     connection.release();
   }
@@ -428,7 +431,7 @@ const changePassword = async (currentPassword, newPassword, userId) => {
     );
 
     if (!comparePassword) {
-      throw createAppError("Wrong password", 400);
+      throw utils.appError("Wrong password", 400);
     }
 
     const passwordHash = await bcrypt.hash(newPassword, saltRounds);
@@ -440,14 +443,14 @@ const changePassword = async (currentPassword, newPassword, userId) => {
 
     const changeMethod = "Manual";
 
-    recordPasswordChange({ userId, req, changeMethod });
+    alertService.recordPasswordChange({ userId, req, changeMethod });
   } catch (error) {
     if (error.isAppError) {
       throw error;
     }
 
     console.error("Change Password Service Critical Error: ", error.message);
-    throw createAppError("Internal Server Error", 500);
+    throw utils.appError("Internal Server Error", 500);
   }
 };
 

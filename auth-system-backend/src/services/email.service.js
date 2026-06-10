@@ -1,5 +1,5 @@
-import transporter from "./email.transporter.js";
-import { createAppError } from "../utils/error.util.js";
+import nodemailer from "nodemailer";
+
 import {
   verifyEmailTemplate,
   accountDeletedTemplate,
@@ -8,7 +8,15 @@ import {
   resetCodeTemplate,
 } from "./templates/email.js";
 
-export const sendSignupEmail = async (
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
+const signupEmail = async (
   fullName,
   emailAddress,
   verificationLink,
@@ -32,7 +40,7 @@ export const sendSignupEmail = async (
   }
 };
 
-export const sendResetCodeEmail = async (name, email, code, codeExpirytime) => {
+const resetCodeEmail = async (name, email, code, codeExpirytime) => {
   try {
     const html = resetCodeTemplate(name, code, codeExpirytime, email);
 
@@ -47,7 +55,7 @@ export const sendResetCodeEmail = async (name, email, code, codeExpirytime) => {
   }
 };
 
-export const sendOnboardingEmail = async (name, email) => {
+const onboardingEmail = async (name, email) => {
   try {
     const html = onboardingTemplate(name, email);
     await transporter.sendMail({
@@ -61,7 +69,7 @@ export const sendOnboardingEmail = async (name, email) => {
   }
 };
 
-export const sendPasswordChangedAlert = async ({
+const passwordChangedEmail = async ({
   email,
   name,
   timestamp,
@@ -92,7 +100,7 @@ export const sendPasswordChangedAlert = async ({
   }
 };
 
-export const sendDeleteAccountEmail = async (name, email) => {
+const deleteAccountEmail = async (name, email) => {
   try {
     const html = accountDeletedTemplate(name, email);
     await transporter.sendMail({
@@ -107,4 +115,12 @@ export const sendDeleteAccountEmail = async (name, email) => {
       error.message,
     );
   }
+};
+
+export default {
+  signupEmail,
+  resetCodeEmail,
+  onboardingEmail,
+  passwordChangedEmail,
+  deleteAccountEmail,
 };
