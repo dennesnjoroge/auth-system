@@ -59,7 +59,7 @@ const onboardingEmail = async (name, email) => {
   try {
     const html = onboardingTemplate(name, email);
     await transporter.sendMail({
-      from: `"Onboarding Authentication System" <${process.env.EMAIL_USER}>`,
+      from: `"Onboarding Auth System" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: `Welcome onboard, ${name}`,
       html,
@@ -87,7 +87,7 @@ const passwordChangedEmail = async ({
       email,
     });
     await transporter.sendMail({
-      from: `"Security Authentication System" <${process.env.EMAIL_USER}>`,
+      from: `"Security Auth System" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: `Security Alert!`,
       html,
