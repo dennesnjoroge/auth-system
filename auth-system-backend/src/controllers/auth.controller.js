@@ -1,12 +1,5 @@
-import {
-  registerUserService,
-  verifyEmailService,
-  loginUserService,
-  sendResetCodeService,
-  verifyResetCodeService,
-  resetPasswordService,
-  changePasswordService,
-} from "../services/auth.service.js";
+import authService from "../services/auth.service.js";
+
 import {
   sendSignupEmail,
   sendResetCodeEmail,
@@ -25,7 +18,7 @@ import validator from "validator";
 
 const saltRounds = 10;
 
-export const registerUser = async (req, res, next) => {
+const register = async (req, res, next) => {
   try {
     const { firstName, lastName, emailAddress, password } = req?.body || {};
 
@@ -72,7 +65,7 @@ export const registerUser = async (req, res, next) => {
       normalizedPassword,
     };
 
-    await registerUserService(registrationData);
+    await authService.register(registrationData);
 
     return sendSuccessMessage(
       res,
@@ -84,7 +77,7 @@ export const registerUser = async (req, res, next) => {
   }
 };
 
-export const verifyEmail = async (req, res, next) => {
+const verifyEmail = async (req, res, next) => {
   try {
     const { verificationToken } = req.body;
 
@@ -92,7 +85,7 @@ export const verifyEmail = async (req, res, next) => {
       throw createAppError("Verification token is required", 400);
     }
 
-    await verifyEmailService(verificationToken);
+    await authService.verifyEmail(verificationToken);
 
     return sendSuccessMessage(
       res,
@@ -104,7 +97,7 @@ export const verifyEmail = async (req, res, next) => {
   }
 };
 
-export const loginUser = async (req, res, next) => {
+const login = async (req, res, next) => {
   try {
     const { emailAddress, password } = req?.body || {};
 
@@ -119,7 +112,7 @@ export const loginUser = async (req, res, next) => {
       throw createAppError("Password cannot be empty", 400);
     }
 
-    const accessToken = await loginUserService(
+    const accessToken = await authService.login(
       normalizedEmail,
       normalizedPassword,
     );
@@ -137,7 +130,7 @@ export const loginUser = async (req, res, next) => {
   }
 };
 
-export const logoutUser = async (req, res) => {
+const logout = async (req, res) => {
   res.clearCookie("_at", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -147,7 +140,7 @@ export const logoutUser = async (req, res) => {
   return sendSuccessMessage(res, 200, "Logged out successfully");
 };
 
-export const forgotPassword = async (req, res, next) => {
+const forgotPassword = async (req, res, next) => {
   try {
     const { emailAddress } = req?.body || {};
 
@@ -156,7 +149,7 @@ export const forgotPassword = async (req, res, next) => {
       throw createAppError("Email address is required", 400);
     }
 
-    await sendResetCodeService(normalizedEmailAddress);
+    await authService.sendResetCode(normalizedEmailAddress);
 
     return res.status(200).json({
       message:
@@ -167,7 +160,7 @@ export const forgotPassword = async (req, res, next) => {
   }
 };
 
-export const verifyResetCode = async (req, res, next) => {
+const verifyResetCode = async (req, res, next) => {
   try {
     const { emailAddress, resetCode } = req?.body || {};
 
@@ -182,7 +175,7 @@ export const verifyResetCode = async (req, res, next) => {
       throw createAppError("Reset code cannot be empty", 400);
     }
 
-    const { resetToken } = await verifyResetCodeService(
+    const { resetToken } = await authService.verifyResetCode(
       normalizedEmailAddress,
       normalizedResetCode,
     );
@@ -205,7 +198,7 @@ export const verifyResetCode = async (req, res, next) => {
   }
 };
 
-export const resetPassword = async (req, res, next) => {
+const resetPassword = async (req, res, next) => {
   try {
     const resetToken = req?.cookies._rt || undefined;
 
@@ -219,7 +212,7 @@ export const resetPassword = async (req, res, next) => {
       throw createAppError("Password cannot be empty", 400);
     }
 
-    await resetPasswordService(resetToken, newPassword, req);
+    await authService.resetPassword(resetToken, newPassword, req);
 
     return sendSuccessMessage(res, 200, "Password reset successful");
   } catch (error) {
@@ -227,12 +220,12 @@ export const resetPassword = async (req, res, next) => {
   }
 };
 
-export const changePassword = async (req, res) => {
+const changePassword = async (req, res, next) => {
   try {
     const { currentPassword, newPassword } = req?.body || {};
     const userId = req.user.id;
 
-    await changePasswordService(currentPassword, newPassword, userId);
+    await authService.changePassword(currentPassword, newPassword, userId);
 
     return sendSuccessMessage(res, 200, "Password changed successfully");
   } catch (error) {
@@ -248,4 +241,15 @@ export const checkAuthToken = async (req, res) => {
   }
 
   return res.status(200).json({ authenticated: true });
+};
+
+export default {
+  register,
+  verifyEmail,
+  login,
+  logout,
+  forgotPassword,
+  verifyResetCode,
+  resetPassword,
+  changePassword,
 };
