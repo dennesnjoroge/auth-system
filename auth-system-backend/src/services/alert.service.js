@@ -2,7 +2,7 @@ import utils from "../utils/utils.js";
 import db from "../config/db.js";
 import emailService from "./email.service.js";
 
-const recordPasswordChange = async ({ userId, req, changeMethod }) => {
+const recordPasswordChange = async (userId, req, changeMethod) => {
   const ipAddress = utils.getClientIP(req);
   const userAgent = req.headers["user-agent"];
   const deviceInfo = utils.parseUserAgent(userAgent);
@@ -20,17 +20,16 @@ const recordPasswordChange = async ({ userId, req, changeMethod }) => {
     [userId],
   );
 
-  const email = rows[0].email_address;
-  const name = `${rows[0].first_name} ${rows[0].last_name}`;
+  const { first_name, last_name, email_address } = rows[0];
 
-  emailService.passwordChangedEmail({
-    email,
-    name,
-    timestamp: new Date(),
+  emailService.passwordAlert(
+    email_address,
+    `${first_name} ${last_name}`,
+    new Date(),
     ipAddress,
     deviceInfo,
     location,
-  });
+  );
 };
 
 export default { recordPasswordChange };

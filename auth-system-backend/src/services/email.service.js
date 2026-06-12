@@ -57,29 +57,26 @@ const forgotPassword = async (fullName, emailAddress, resetToken) => {
   }
 };
 
-const passwordChangedEmail = async ({
-  email,
-  name,
+const passwordAlert = async (
+  emailAddress,
+  fullName,
   timestamp,
   ipAddress,
   deviceInfo,
   location,
-}) => {
+) => {
   try {
-    const html = passwordChangeTemplate({
-      name,
-      timestamp,
-      ipAddress,
-      deviceInfo,
-      location,
-      email,
-    });
-
     await resend.emails.send({
       from: `"Security Auth System" <onboarding@resend.dev>`,
-      to: email,
+      to: emailAddress,
       subject: `Security Alert!`,
-      html,
+      html: emailTemplates.passwordAlert(
+        fullName,
+        timestamp,
+        ipAddress,
+        deviceInfo,
+        location,
+      ),
     });
   } catch (error) {
     throw error;
@@ -108,6 +105,6 @@ export default {
   signupEmail,
   onboardingEmail,
   forgotPassword,
-  passwordChangedEmail,
+  passwordAlert,
   deleteAccountEmail,
 };

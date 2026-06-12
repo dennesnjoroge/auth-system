@@ -586,4 +586,233 @@ const forgotPassword = (fullName, resetLink) => {
   `;
 };
 
-export default { verifyEmail, onboardingEmail, forgotPassword };
+const passwordAlert = (
+  fullName,
+  formattedTime,
+  ipAddress,
+  deviceInfo,
+  location,
+) => {
+  return `
+  <!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Password Changed</title>
+  </head>
+
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      background-color: #f3f3f3;
+      font-family:
+        -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto,
+        Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    "
+  >
+    <table
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      style="background-color: #f3f3f3; padding: 40px 0"
+    >
+      <tr>
+        <td align="center">
+          <table
+            width="560"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="background-color: #ffffff; margin: 0 auto"
+          >
+            <!-- Header Block: Black Background with White Bold Text -->
+            <tr>
+              <td
+                align="left"
+                style="background-color: #000000; padding: 30px 40px"
+              >
+                <span
+                  style="
+                    font-size: 24px;
+                    font-weight: 700;
+                    color: #ffffff;
+                    letter-spacing: -0.5px;
+                  "
+                >
+                  Authentication System
+                </span>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding: 40px 40px 40px 40px">
+                <h1
+                  style="
+                    margin: 0 0 24px 0;
+                    color: #000000;
+                    font-size: 34px;
+                    font-weight: 400;
+                    line-height: 40px;
+                    letter-spacing: -1px;
+                  "
+                >
+                  Your password was changed
+                </h1>
+
+                <p
+                  style="
+                    margin: 0 0 16px 0;
+                    color: #333333;
+                    font-size: 16px;
+                    line-height: 24px;
+                  "
+                >
+                  Hello <b>${fullName}</b>,
+                </p>
+
+                <p
+                  style="
+                    margin: 0 0 32px 0;
+                    color: #333333;
+                    font-size: 16px;
+                    line-height: 24px;
+                  "
+                >
+                  Your password was successfully changed.
+                </p>
+
+                <table
+                  cellpadding="0"
+                  cellspacing="0"
+                  border="0"
+                  style="margin-bottom: 32px"
+                >
+                  <tr>
+                    <td style="background-color: #f6f6f6; padding: 12px 24px">
+                      <strong style="font-size: 12px">TIME:</strong>
+                      <span
+                        style="
+                          font-size: 14px;
+                          font-weight: bold;
+                          color: #000000;
+                        "
+                      >
+                        ${formattedTime}
+                      </span>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="background-color: #f6f6f6; padding: 12px 24px">
+                      <strong style="font-size: 12px">IP ADDRESS:</strong>
+                      <span
+                        style="
+                          font-size: 14px;
+                          font-weight: bold;
+                          color: #000000;
+                        "
+                      >
+                        ${ipAddress}
+                      </span>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="background-color: #f6f6f6; padding: 12px 24px">
+                      <strong style="font-size: 12px">DEVICE:</strong>
+                      <span
+                        style="
+                          font-size: 14px;
+                          font-weight: bold;
+                          color: #000000;
+                        "
+                      >
+                        ${deviceInfo}
+                      </span>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="background-color: #f6f6f6; padding: 12px 24px">
+                      <strong style="font-size: 12px">LOCATION:</strong>
+                      <span
+                        style="
+                          font-size: 14px;
+                          font-weight: bold;
+                          color: #000000;
+                        "
+                      >
+                        ${location}
+                      </span>
+                    </td>
+                  </tr>
+                </table>
+
+                <p
+                  style="
+                    margin: 0;
+                    color: #555555;
+                    font-size: 14px;
+                    line-height: 20px;
+                  "
+                >
+                  If this wasn't you, please reset your password immediately.
+                </p>
+              </td>
+            </tr>
+
+            <!-- Footer Block: Black Background with Clean White Typography -->
+            <tr>
+              <td style="padding: 40px; background-color: #000000">
+                <p
+                  style="
+                    margin: 0 0 12px 0;
+                    color: #ffffff;
+                    font-size: 12px;
+                    line-height: 18px;
+                    font-weight: 500;
+                  "
+                >
+                  Auth System.
+                </p>
+                <p
+                  style="
+                    margin: 0 0 24px 0;
+                    color: #e0e0e0;
+                    font-size: 12px;
+                    line-height: 18px;
+                  "
+                >
+                  If you have any questions or need help, reach us anytime at
+                  <a style="color: #e0e0e0" href="mailto:support@yourdomain.com"
+                    >support@yourdomain.com</a
+                  >
+                </p>
+                <p
+                  style="
+                    margin: 0;
+                    color: #a0a0a0;
+                    font-size: 11px;
+                    line-height: 16px;
+                  "
+                >
+                  This is a transactional email notification regarding your
+                  security settings.<br />
+                  &copy; 2026 Authentication System. All rights reserved.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+  `;
+};
+
+export default { verifyEmail, onboardingEmail, forgotPassword, passwordAlert };

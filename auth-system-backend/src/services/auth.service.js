@@ -288,14 +288,13 @@ const resetPassword = async (resetToken, password, req) => {
       [passwordHash, user_id],
     );
 
-    const changeMethod = "Manual";
-
-    await connection.execute(`DELETE FROM reset_tokens WHERE user_id = ?`, [
-      user_id,
+    // delete the token
+    await connection.execute(`DELETE FROM reset_tokens WHERE token_hash = ?`, [
+      incomingHash,
     ]);
 
     await connection.commit();
-    alertService.recordPasswordChange({ user_id, req, changeMethod });
+    alertService.recordPasswordChange(user_id, req, "Manual");
   } catch (error) {
     await connection.rollback();
     throw error;
