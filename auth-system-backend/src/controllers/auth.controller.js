@@ -8,54 +8,32 @@ import validator from "validator";
 
 const saltRounds = 10;
 
+const login = async (req, res, next) => {
+  try {
+    const accessToken = await authService.login(
+      normalizedEmail,
+      normalizedPassword,
+    );
+
+    res.cookie("_at", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 1000,
+    });
+
+    return res.status(200).json({
+      status: "success",
+      message: "Login was successful",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const register = async (req, res, next) => {
   try {
-    const { firstName, lastName, emailAddress, password } = req?.body || {};
-
-    const normalizedFirstName = firstName?.trim() || "";
-    const normalizedLastName = lastName?.trim() || "";
-    const normalizedEmailAddress = emailAddress?.trim().toLowerCase() || "";
-    const normalizedPassword = password || "";
-
-    if (!normalizedFirstName) {
-      throw utils.appError("First name is required", 400);
-    }
-
-    if (!normalizedLastName) {
-      throw utils.appError("Last name is required", 400);
-    }
-
-    if (!validator.isEmail(normalizedEmailAddress)) {
-      throw utils.appError("Invalid email address", 400);
-    }
-    if (
-      !normalizedFirstName ||
-      !normalizedLastName ||
-      !normalizedEmailAddress ||
-      !normalizedPassword.trim()
-    ) {
-      throw utils.appError("Missing required fields", 400);
-    }
-
-    if (normalizedPassword.length < 8) {
-      throw utils.appError("Password must be at least 8 characters long", 400);
-    }
-
-    if (!utils.passwordRegex(normalizedPassword)) {
-      throw utils.appError(
-        "Password must include uppercase, lowercase, number, and special character",
-        400,
-      );
-    }
-
-    const registrationData = {
-      normalizedFirstName,
-      normalizedLastName,
-      normalizedEmailAddress,
-      normalizedPassword,
-    };
-
-    await authService.register(registrationData);
+    await authService.register(req.body);
 
     return res.status(201).json({
       status: "success",
@@ -80,42 +58,6 @@ const verifyEmail = async (req, res, next) => {
     return res.status(200).json({
       status: "success",
       message: "Email verified successfully. You can now log in",
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const login = async (req, res, next) => {
-  try {
-    const { emailAddress, password } = req?.body || {};
-
-    const normalizedEmail = emailAddress?.trim().toLowerCase();
-    const normalizedPassword = password || "";
-
-    if (!normalizedEmail) {
-      throw utils.appError("Email address is required");
-    }
-
-    if (!normalizedPassword.trim()) {
-      throw utils.appError("Password cannot be empty", 400);
-    }
-
-    const accessToken = await authService.login(
-      normalizedEmail,
-      normalizedPassword,
-    );
-
-    res.cookie("_at", accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 1000,
-    });
-
-    return res.status(200).json({
-      status: "success",
-      message: "Login was successful",
     });
   } catch (error) {
     next(error);

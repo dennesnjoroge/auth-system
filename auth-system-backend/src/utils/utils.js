@@ -3,9 +3,10 @@ import crypto from "crypto";
 import db from "../config/db.js";
 
 // create app error
-const appError = (message, statusCode) => {
+const appError = (message, statusCode, errors = null) => {
   const error = new Error(message);
   error.statusCode = statusCode;
+  error.errors = errors;
   error.isAppError = true;
   return error;
 };

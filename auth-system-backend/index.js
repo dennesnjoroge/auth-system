@@ -62,9 +62,19 @@ app.use(express.json({ limit: "1mb" }));
 app.use("/api/v1", indexRoutes);
 
 app.use((error, req, res, next) => {
-  return res.status(error.statusCode).json({
-    status: "fail",
-    message: error.message,
+  if (error.isAppError) {
+    return res.status(error.statusCode).json({
+      status: "fail",
+      message: error.message,
+      errors: error.errors,
+    });
+  }
+
+  console.error("CRITICAL SYSTEM ERROR:", error);
+
+  return res.status(500).json({
+    status: "error",
+    message: "Something went completely wrong on our end.",
   });
 });
 
