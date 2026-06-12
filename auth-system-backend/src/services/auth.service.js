@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import utils from "../utils/utils.js";
 import emailService from "./email.service.js";
 import alertService from "./alert.service.js";
+import pool from "../config/db.js";
 
 const SALT_ROUNDS = 10;
 
@@ -205,42 +206,39 @@ const verifyEmail = async (verificationToken) => {
   }
 };
 
-const sendResetCode = async (emailAddress) => {
+const forgotPassword = async (emailAddress) => {
   try {
+    // check user
     const [rows] = await db.execute(
       `SELECT id, first_name, last_name FROM users WHERE email_address = ?`,
       [emailAddress],
     );
 
+    // return silently
     if (rows.length === 0) {
       return;
     }
 
-    const user = rows[0];
+    // destructure user data
+    const { id, first_name, last_name } = rows[0];
 
-    const code = crypto.randomInt(100000, 1000000).toString();
-    const codeHash = crypto.createHash("sha256").update(code).digest("hex");
-    const codeExpiryTime = 5;
-    const expiresAt = new Date(Date.now() + codeExpiryTime * 60 * 1000);
+    // generate reset token
+    const { resetToken, resetTokenHash, expiresAt } =
+      utils.generateresetToken();
 
-    await db.execute(
-      `INSERT INTO reset_codes (user_id, code_hash, expires_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE code_hash = VALUES(code_hash), expires_at = VALUES(expires_at)`,
-      [user.id, codeHash, expiresAt],
+    // store token hash in db
+    await pool.execute(
+      `INSERT INTO reset_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)`,
+      [id, resetTokenHash, expiresAt],
     );
 
-    emailService.resetCodeEmail(
-      `${user.first_name} ${user.last_name}`,
+    emailService.forgotPassword(
+      `${first_name} ${last_name}`,
       emailAddress,
-      code,
-      codeExpiryTime,
+      resetToken,
     );
   } catch (error) {
-    if (error.isAppError) {
-      throw error;
-    }
-
-    console.error("Critical Forgot password service error", error.message);
-    throw utils.appError("Internal Server Error", 500);
+    throw error;
   }
 };
 
@@ -431,9 +429,10 @@ const changePassword = async (currentPassword, newPassword, userId) => {
 };
 
 export default {
+  login,
   register,
   verifyEmail,
-  login,
+  forgotPassword,
   sendResetCode,
   verifyResetCode,
   resetPassword,

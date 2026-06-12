@@ -23,7 +23,11 @@ router.post(
   authController.verifyEmail,
 );
 router.post("/logout", authController.logout);
-router.post("/forgot", authController.forgotPassword);
+router.post(
+  "/forgot-password",
+  validationMiddleware.forgotPassword(validationSchema.forgotPassword),
+  authController.forgotPassword,
+);
 router.post("/verify-reset-code", authController.verifyResetCode);
 router.post("/reset-password", authController.resetPassword);
 router.post("/change-password", auth, authController.changePassword);

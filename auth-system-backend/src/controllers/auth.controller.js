@@ -79,14 +79,9 @@ const logout = async (req, res, next) => {
 
 const forgotPassword = async (req, res, next) => {
   try {
-    const { emailAddress } = req?.body || {};
+    const { emailAddress } = req?.body;
 
-    const normalizedEmailAddress = emailAddress?.trim().toLowerCase();
-    if (!normalizedEmailAddress) {
-      throw utils.appError("Email address is required", 400);
-    }
-
-    await authService.sendResetCode(normalizedEmailAddress);
+    await authService.forgotPassword(emailAddress);
 
     return res.status(200).json({
       message:

@@ -94,6 +94,14 @@ const generateVerificationToken = () => {
   return { verificationToken, verificationTokenHash, expiresAt };
 };
 
+const generateresetToken = () => {
+  const resetToken = crypto.randomBytes(32).toString("hex");
+  const resetTokenHash = crypto.hash("sha256", resetToken, "hex");
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+  return { resetToken, resetTokenHash, expiresAt };
+};
+
 export default {
   appError,
   signAccessToken,
@@ -103,4 +111,5 @@ export default {
   getLocationFromIP,
   resendEmail,
   generateVerificationToken,
+  generateresetToken,
 };

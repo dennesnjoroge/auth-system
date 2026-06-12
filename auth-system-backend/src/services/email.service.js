@@ -43,15 +43,14 @@ const onboardingEmail = async (fullName, emailAddress) => {
   }
 };
 
-const resetCodeEmail = async (name, email, code, codeExpirytime) => {
+const forgotPassword = async (fullName, emailAddress, resetToken) => {
+  const resetLink = `${BASE_URL}/forgot?token=${resetToken}`;
   try {
-    const html = resetCodeTemplate(name, code, codeExpirytime, email);
-
     await resend.emails.send({
       from: `"Authentication System" <onboarding@resend.dev>`,
-      to: email,
-      subject: "Your Password Reset Code",
-      html,
+      to: emailAddress,
+      subject: "Your Password Reset Link",
+      html: emailTemplates.forgotPassword(fullName, resetLink),
     });
   } catch (error) {
     throw error;
@@ -109,6 +108,7 @@ export default {
   signupEmail,
   resetCodeEmail,
   onboardingEmail,
+  forgotPassword,
   passwordChangedEmail,
   deleteAccountEmail,
 };
