@@ -142,71 +142,64 @@ const verifyEmail = async (verificationToken) => {
     // start mysql transaction
     await connection.beginTransaction();
 
-    const verificationTokenHash = crypto
-      .createHash("sha256")
-      .update(verificationToken)
-      .digest("hex");
+    // hash incoming token
+    const incomingHash = crypto.hash("sha256", verificationToken, "hex");
 
     const [rows] = await connection.execute(
-      "SELECT id, user_id, expires_at FROM verification_tokens WHERE token_hash = ?",
-      [verificationTokenHash],
+      "SELECT user_id, expires_at FROM verification_tokens WHERE token_hash = ?",
+      [incomingHash],
     );
 
     if (rows.length === 0) {
-      throw utils.appError("Invalid verification token", 400);
+      throw utils.appError("Invalid or expired verification token", 400);
     }
 
+    // destructure db data
+    const { user_id, expires_at } = rows[0];
     const token = rows[0];
 
-    if (token.expires_at < new Date()) {
-      throw utils.appError("Verification token has expired", 400);
+    if (new Date(expires_at).getTime() < Date.now()) {
+      // delete expired token
+      await connection.execute(
+        `DELETE FROM verification_token WHERE user_id = ?`,
+        [user_id],
+      );
+
+      throw utils.appError("Invalid or expired verification token", 400);
     }
 
     await connection.execute(
       `UPDATE users SET email_verified = ? WHERE id = ?`,
-      [1, token.user_id],
+      [1, user_id],
     );
 
     await connection.execute(
       `DELETE FROM verification_tokens WHERE user_id = ?`,
-      [token.user_id],
+      [user_id],
     );
 
     const [userRows] = await connection.execute(
       `SELECT first_name, last_name, email_address FROM users WHERE id = ?`,
-      [token.user_id],
+      [user_id],
     );
 
+    // throw custom error/ user must exist
     if (userRows.length === 0) {
-      throw utils.appError("User with that token was not found", 404);
-    }
-
-    const user = userRows[0];
-
-    await connection.commit();
-
-    try {
-      emailService.onboardingEmail(
-        `${user.first_name} ${user.last_name}`,
-        user.email_address,
-      );
-    } catch (emailError) {
-      console.error(
-        "Send Onboarding Email Critical Error: ",
-        emailError.message,
-      );
-    }
-  } catch (error) {
-    await connection.rollback();
-    if (error.isAppError) {
+      const error = new Error("User with token-id reference not found");
+      error.statusCode = 500;
       throw error;
     }
 
-    console.error(
-      `Email Verification Service Critical Error: ${error.message}`,
-    );
+    // destructure user data
+    const { first_name, last_name, email_address } = userRows[0];
 
-    throw utils.appError("Internal Server Error", 500);
+    await connection.commit();
+
+    emailService.onboardingEmail(`${first_name} ${last_name}`, email_address);
+  } catch (error) {
+    await connection.rollback();
+
+    throw error;
   } finally {
     connection.release();
   }

@@ -30,6 +30,19 @@ const signupEmail = async (fullName, emailAddress, verificationToken) => {
   }
 };
 
+const onboardingEmail = async (fullName, emailAddress) => {
+  try {
+    await resend.emails.send({
+      from: `"Onboarding Auth System" <onboarding@resend.dev>`,
+      to: emailAddress,
+      subject: `Welcome onboard, ${fullName}`,
+      html: emailTemplates.onboardingEmail(fullName, emailAddress),
+    });
+  } catch (error) {
+    throw error;
+  }
+};
+
 const resetCodeEmail = async (name, email, code, codeExpirytime) => {
   try {
     const html = resetCodeTemplate(name, code, codeExpirytime, email);
@@ -38,21 +51,6 @@ const resetCodeEmail = async (name, email, code, codeExpirytime) => {
       from: `"Authentication System" <onboarding@resend.dev>`,
       to: email,
       subject: "Your Password Reset Code",
-      html,
-    });
-  } catch (error) {
-    throw error;
-  }
-};
-
-const onboardingEmail = async (name, email) => {
-  try {
-    const html = onboardingTemplate(name, email);
-
-    await resend.emails.send({
-      from: `"Onboarding Auth System" <onboarding@resend.dev>`,
-      to: email,
-      subject: `Welcome onboard, ${name}`,
       html,
     });
   } catch (error) {

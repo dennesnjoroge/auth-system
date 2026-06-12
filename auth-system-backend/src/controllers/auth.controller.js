@@ -49,10 +49,6 @@ const verifyEmail = async (req, res, next) => {
   try {
     const { verificationToken } = req.body;
 
-    if (!verificationToken) {
-      throw utils.appError("Verification token is required", 400);
-    }
-
     await authService.verifyEmail(verificationToken);
 
     return res.status(200).json({
