@@ -28,8 +28,11 @@ router.post(
   validationMiddleware.forgotPassword(validationSchema.forgotPassword),
   authController.forgotPassword,
 );
-router.post("/verify-reset-code", authController.verifyResetCode);
-router.post("/reset-password", authController.resetPassword);
+router.post(
+  "/reset-password",
+  validationMiddleware.resetPassword(validationSchema.resetPassword),
+  authController.resetPassword,
+);
 router.post("/change-password", auth, authController.changePassword);
 //router.get("/me", checkAuthToken);
 

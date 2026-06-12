@@ -228,7 +228,7 @@ const forgotPassword = async (emailAddress) => {
 
     // store token hash in db
     await pool.execute(
-      `INSERT INTO reset_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)`,
+      `INSERT INTO reset_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE token_hash = VALUES(token_hash), expires_at = VALUES(expires_at)`,
       [id, resetTokenHash, expiresAt],
     );
 
@@ -242,149 +242,63 @@ const forgotPassword = async (emailAddress) => {
   }
 };
 
-const verifyResetCode = async (emailAddress, resetCode) => {
+const resetPassword = async (resetToken, password, req) => {
   const connection = await db.getConnection();
 
   try {
     await connection.beginTransaction();
 
-    const [rows] = await connection.execute(
-      `SELECT id FROM users WHERE email_address = ?`,
-      [emailAddress],
-    );
-
-    if (rows.length === 0) {
-      throw utils.appError("Invalid reset request", 400);
-    }
-
-    const user = rows[0];
-
-    const [codeRows] = await connection.execute(
-      `SELECT code_hash, expires_at FROM reset_codes WHERE user_id = ? AND code_hash IS NOT NULL FOR UPDATE`,
-      [user.id],
-    );
-
-    if (codeRows.length === 0) {
-      throw utils.appError("Invalid reset request", 400);
-    }
-
-    const code = codeRows[0];
-
-    if (new Date(code.expires_at).getTime() < Date.now()) {
-      await connection.execute(`DELETE FROM reset_codes WHERE user_id = ?`, [
-        user.id,
-      ]);
-
-      throw utils.appError(
-        "Reset code has expired. Please request a new one.",
-        401,
-      );
-    }
-
-    const submittedCodeHash = crypto
-      .createHash("sha256")
-      .update(resetCode)
-      .digest("hex");
-
-    if (submittedCodeHash !== code.code_hash) {
-      throw utils.appError("Invalid reset code", 400);
-    }
-
-    const resetToken = crypto.randomBytes(32).toString("hex");
-    const resetTokenHash = crypto
-      .createHash("sha256")
-      .update(resetToken)
-      .digest("hex");
-
-    const resetTokenExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
-
-    await connection.execute(
-      `INSERT into reset_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE token_hash = VALUES(token_hash), expires_at = VALUES(expires_at)`,
-      [user.id, resetTokenHash, resetTokenExpiresAt],
-    );
-
-    await connection.execute(`DELETE FROM reset_codes WHERE user_id = ?`, [
-      user.id,
-    ]);
-
-    await connection.commit();
-
-    return { resetToken };
-  } catch (error) {
-    await connection.rollback();
-
-    if (error.isAppError) {
-      throw error;
-    }
-
-    console.error("Verify Reset Code Service Critical Error: ", error.message);
-    throw utils.appError("Internal Server Error");
-  } finally {
-    connection.release();
-  }
-};
-
-const resetPassword = async (resetToken, newPassword, req) => {
-  const connection = await db.getConnection();
-
-  try {
-    await connection.beginTransaction();
-
-    const clientTokenHash = crypto
-      .createHash("sha256")
-      .update(resetToken)
-      .digest("hex");
+    // hash incoming token
+    const incomingHash = crypto.hash("sha256", resetToken, "hex");
 
     const [tokenRows] = await connection.execute(
       `SELECT user_id, expires_at FROM reset_tokens WHERE token_hash = ?`,
-      [clientTokenHash],
+      [incomingHash],
     );
 
     if (tokenRows.length === 0) {
-      throw utils.appError("Invalid reset request", 400);
+      throw utils.appError("Invalid or expired reset token", 400);
     }
 
-    const token = tokenRows[0];
+    // destructure token data
+    const { user_id, expires_at } = tokenRows[0];
 
-    if (new Date(token.expires_at).getTime() < Date.now()) {
-      throw utils.appError("Reset token has expired", 401);
+    if (new Date(expires_at).getTime() < Date.now()) {
+      throw utils.appError("Invalid or expired reset token", 400);
     }
 
     const [userRows] = await connection.execute(
       `SELECT first_name, last_name FROM users WHERE id = ? FOR UPDATE`,
-      [token.user_id],
+      [user_id],
     );
 
     if (userRows.length === 0) {
-      throw utils.appError("Invalid reset request", 400);
-    }
+      const error = new Error("User not found");
+      error.statusCode = 500;
 
-    const user = userRows[0];
-
-    const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
-
-    await connection.execute(
-      `UPDATE users SET password_hash = ? WHERE id = ?`,
-      [passwordHash, token.user_id],
-    );
-
-    const userId = token.user_id;
-    const changeMethod = "Manual";
-
-    await connection.execute(`DELETE FROM reset_tokens WHERE user_id = ?`, [
-      userId,
-    ]);
-
-    await connection.commit();
-    alertService.recordPasswordChange({ userId, req, changeMethod });
-  } catch (error) {
-    await connection.rollback();
-    if (error.isAppError) {
       throw error;
     }
 
-    console.error("Reset password Service Error: ", error);
-    throw utils.appError("Internal Server Error", 500);
+    const { first_name, last_name } = userRows[0];
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    await connection.execute(
+      `UPDATE users SET password_hash = ? WHERE id = ?`,
+      [passwordHash, user_id],
+    );
+
+    const changeMethod = "Manual";
+
+    await connection.execute(`DELETE FROM reset_tokens WHERE user_id = ?`, [
+      user_id,
+    ]);
+
+    await connection.commit();
+    alertService.recordPasswordChange({ user_id, req, changeMethod });
+  } catch (error) {
+    await connection.rollback();
+    throw error;
   } finally {
     connection.release();
   }
@@ -433,8 +347,6 @@ export default {
   register,
   verifyEmail,
   forgotPassword,
-  sendResetCode,
-  verifyResetCode,
   resetPassword,
   changePassword,
 };

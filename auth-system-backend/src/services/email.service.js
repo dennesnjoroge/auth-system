@@ -106,7 +106,6 @@ const deleteAccountEmail = async (name, email) => {
 
 export default {
   signupEmail,
-  resetCodeEmail,
   onboardingEmail,
   forgotPassword,
   passwordChangedEmail,

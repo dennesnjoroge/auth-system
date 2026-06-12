@@ -92,62 +92,11 @@ const forgotPassword = async (req, res, next) => {
   }
 };
 
-const verifyResetCode = async (req, res, next) => {
-  try {
-    const { emailAddress, resetCode } = req?.body || {};
-
-    const normalizedEmailAddress = emailAddress?.trim().toLowerCase();
-    const normalizedResetCode = resetCode?.trim();
-
-    if (!normalizedEmailAddress) {
-      throw utils.appError("Email address is required", 400);
-    }
-
-    if (!normalizedResetCode) {
-      throw utils.appError("Reset code cannot be empty", 400);
-    }
-
-    const { resetToken } = await authService.verifyResetCode(
-      normalizedEmailAddress,
-      normalizedResetCode,
-    );
-
-    res.clearCookie("_rt", {
-      path: "/api/v1/auth/reset-password",
-    });
-
-    res.cookie("_rt", resetToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 15 * 60 * 1000,
-      path: "/api/v1/auth/reset-password",
-    });
-
-    return res.status(200).json({
-      status: "success",
-      message: "Reset code verified successfully",
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
 const resetPassword = async (req, res, next) => {
   try {
-    const resetToken = req?.cookies._rt || undefined;
+    const { resetToken, password } = req.body;
 
-    const { newPassword } = req?.body || {};
-
-    if (!resetToken) {
-      throw utils.appError("Invalid reset session", 400);
-    }
-
-    if (!newPassword) {
-      throw utils.appError("Password cannot be empty", 400);
-    }
-
-    await authService.resetPassword(resetToken, newPassword, req);
+    await authService.resetPassword(resetToken, password, req);
 
     return res
       .status(200)
@@ -188,7 +137,6 @@ export default {
   login,
   logout,
   forgotPassword,
-  verifyResetCode,
   resetPassword,
   changePassword,
 };
