@@ -29,7 +29,7 @@ const register = z.object({
 });
 
 const verifyEmail = z.object({
-  verificatioToken: z
+  verificationToken: z
     .string({ error: "Verification token is required" })
     .trim()
     .min(1, "Verification token is required"),
