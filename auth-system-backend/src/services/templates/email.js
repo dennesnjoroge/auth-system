@@ -1,9 +1,4 @@
-export const verifyEmailTemplate = (
-  fullName,
-  verificationLink,
-  emailAddress,
-  linkExpiryTime,
-) => {
+export const verifyEmailTemplate = (fullName, verificationLink) => {
   return `
 <!doctype html>
 <html lang="en">

@@ -8,16 +8,84 @@ import alertService from "./alert.service.js";
 
 const SALT_ROUNDS = 10;
 
-const register = async ({
-  normalizedFirstName: firstName,
-  normalizedLastName: lastName,
-  normalizedEmailAddress: emailAddress,
-  normalizedPassword: password,
-}) => {
+const login = async (emailAddress, password) => {
+  try {
+    const [rows] = await db.execute(
+      "SELECT id, first_name, last_name, email_address, email_verified, password_hash FROM users WHERE email_address = ?",
+      [emailAddress],
+    );
+
+    if (rows.length === 0) {
+      throw utils.appError("Incorrect email or password", 401);
+    }
+
+    const user = rows[0];
+
+    const comparePassword = await bcrypt.compare(password, user.password_hash);
+
+    if (!comparePassword) {
+      throw utils.appError("Incorrect email or password", 401);
+    }
+
+    const [tokenRows] = await db.execute(
+      "SELECT expires_at FROM verification_tokens WHERE user_id = ?",
+      [user.id],
+    );
+
+    const token = tokenRows[0];
+
+    if (user.email_verified === 0) {
+      if (token?.expires_at) {
+        if (new Date(token.expires_at).getTime() > Date.now()) {
+          throw utils.appError(
+            "A verification email was already sent. Check your inbox",
+            403,
+          );
+        }
+      }
+
+      const { verificationToken, linkExpiryTime } = await utils.resendEmail(
+        user.id,
+      );
+      const verificationLink = `${process.env.CLIENT_ORIGIN}/verify?token=${verificationToken}`;
+      emailService
+        .signupEmail(
+          `${user.first_name} ${user.last_name}`,
+          user.email_address,
+          verificationLink,
+          linkExpiryTime,
+        )
+        .catch((emailError) =>
+          console.error(
+            "Resend verification email Error: ",
+            emailError.message,
+          ),
+        );
+
+      throw utils.appError(
+        "Email not verified. We have sent a new link to your inbox",
+        403,
+      );
+    }
+
+    return utils.signAccessToken({ id: user.id, email: user.email_address });
+  } catch (error) {
+    if (error.isAppError) {
+      throw error;
+    }
+
+    console.error("Login Service Critical Error: ", error.message);
+    throw utils.appError("Internal Server Error", 500);
+  }
+};
+
+const register = async ({ firstName, lastName, emailAddress, password }) => {
   const connection = await db.getConnection();
 
   try {
+    // start MySQL transaction
     await connection.beginTransaction();
+
     const [rows] = await connection.execute(
       "SELECT id FROM users WHERE email_address = ?",
       [emailAddress],
@@ -30,20 +98,13 @@ const register = async ({
       );
     }
 
-    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-    const verificationToken = crypto.randomBytes(32).toString("hex");
-    const verificationTokenHash = crypto
-      .createHash("sha256")
-      .update(verificationToken)
-      .digest("hex");
-    const now = new Date();
-    const linkExpiryTime = 5;
-    const verificationTokenExpiresAt = new Date(
-      now.getTime() + linkExpiryTime * 60 * 1000,
-    );
+    // hash password
+    const passwordHash = await bcrypt.hash(password, 10);
 
-    const verificationLink = `${process.env.CLIENT_ORIGIN}/verify?token=${verificationToken}`;
+    const { verificationToken, verificationTokenHash, expiresAt } =
+      utils.generateVerificationToken();
 
+    // insert user in db
     const [result] = await connection.execute(
       `INSERT INTO users (first_name, last_name, email_address, password_hash) VALUES (?, ?, ?, ?)`,
       [firstName, lastName, emailAddress, passwordHash],
@@ -51,41 +112,34 @@ const register = async ({
 
     const userId = result.insertId;
 
+    // insert verification token in db
     await connection.execute(
       `INSERT INTO verification_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)`,
-      [userId, verificationTokenHash, verificationTokenExpiresAt],
+      [userId, verificationTokenHash, expiresAt],
     );
 
     await connection.commit();
 
-    emailService
-      .signupEmail(
-        `${firstName} ${lastName}`,
-        emailAddress,
-        verificationLink,
-        linkExpiryTime,
-      )
-      .catch((emailError) =>
-        console.error("Send SignupEmail Error: ", emailError),
-      );
+    emailService.signupEmail(
+      `${firstName} ${lastName}`,
+      emailAddress,
+      verificationToken,
+    );
 
     return;
   } catch (error) {
     await connection.rollback();
-    if (error.isAppError) {
-      throw error;
-    }
-
-    console.error("Registration service Critical Error:", error.message);
-    throw utils.appError("Internal Server Error", 500);
+    throw error;
   } finally {
     connection.release();
   }
 };
 
 const verifyEmail = async (verificationToken) => {
+  // get mysql transaction
   const connection = await db.getConnection();
   try {
+    // start mysql transaction
     await connection.beginTransaction();
 
     const verificationTokenHash = crypto
@@ -155,77 +209,6 @@ const verifyEmail = async (verificationToken) => {
     throw utils.appError("Internal Server Error", 500);
   } finally {
     connection.release();
-  }
-};
-
-const login = async (emailAddress, password) => {
-  try {
-    const [rows] = await db.execute(
-      "SELECT id, first_name, last_name, email_address, email_verified, password_hash FROM users WHERE email_address = ?",
-      [emailAddress],
-    );
-
-    if (rows.length === 0) {
-      throw utils.appError("Incorrect email or password", 401);
-    }
-
-    const user = rows[0];
-
-    const comparePassword = await bcrypt.compare(password, user.password_hash);
-
-    if (!comparePassword) {
-      throw utils.appError("Incorrect email or password", 401);
-    }
-
-    const [tokenRows] = await db.execute(
-      "SELECT expires_at FROM verification_tokens WHERE user_id = ?",
-      [user.id],
-    );
-
-    const token = tokenRows[0];
-
-    if (user.email_verified === 0) {
-      if (token?.expires_at) {
-        if (new Date(token.expires_at).getTime() > Date.now()) {
-          throw utils.appError(
-            "A verification email was already sent. Check your inbox",
-            403,
-          );
-        }
-      }
-
-      const { verificationToken, linkExpiryTime } = await utils.resendEmail(
-        user.id,
-      );
-      const verificationLink = `${process.env.CLIENT_ORIGIN}/verify?token=${verificationToken}`;
-      emailService
-        .signupEmail(
-          `${user.first_name} ${user.last_name}`,
-          user.email_address,
-          verificationLink,
-          linkExpiryTime,
-        )
-        .catch((emailError) =>
-          console.error(
-            "Resend verification email Error: ",
-            emailError.message,
-          ),
-        );
-
-      throw utils.appError(
-        "Email not verified. We have sent a new link to your inbox",
-        403,
-      );
-    }
-
-    return utils.signAccessToken({ id: user.id, email: user.email_address });
-  } catch (error) {
-    if (error.isAppError) {
-      throw error;
-    }
-
-    console.error("Login Service Critical Error: ", error.message);
-    throw utils.appError("Internal Server Error", 500);
   }
 };
 

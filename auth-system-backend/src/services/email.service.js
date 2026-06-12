@@ -1,33 +1,29 @@
 import { Resend } from "resend";
+import emailTemplates from "../templates/email.templates.js";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 import {
-  verifyEmailTemplate,
   accountDeletedTemplate,
   onboardingTemplate,
   passwordChangeTemplate,
   resetCodeTemplate,
 } from "./templates/email.js";
 
-const signupEmail = async (
-  fullName,
-  emailAddress,
-  verificationLink,
-  linkExpiryTime,
-) => {
+const BASE_URL =
+  process.env.NODE_ENV === "production"
+    ? process.env.FRONTEND_URL
+    : process.env.DEV_FRONTEND_URL;
+
+const signupEmail = async (fullName, emailAddress, verificationToken) => {
   try {
-    const html = verifyEmailTemplate(
-      fullName,
-      verificationLink,
-      emailAddress,
-      linkExpiryTime,
-    );
+    const verificationLink = `${BASE_URL}/verify?token=${verificationToken}`;
+
     await resend.emails.send({
       from: `"Authentication System" <onboarding@resend.dev>`,
       to: emailAddress,
       subject: "Verify your Email",
-      html,
+      html: emailTemplates.verifyEmail(fullName, verificationLink),
     });
   } catch (error) {
     throw error;

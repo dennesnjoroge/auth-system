@@ -86,6 +86,14 @@ const resendEmail = async (userId) => {
   return { verificationToken, linkExpiryTime };
 };
 
+const generateVerificationToken = () => {
+  const verificationToken = crypto.randomBytes(32).toString("hex");
+  const verificationTokenHash = crypto.hash("sha256", verificationToken, "hex");
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+  return { verificationToken, verificationTokenHash, expiresAt };
+};
+
 export default {
   appError,
   signAccessToken,
@@ -94,4 +102,5 @@ export default {
   parseUserAgent,
   getLocationFromIP,
   resendEmail,
+  generateVerificationToken,
 };
