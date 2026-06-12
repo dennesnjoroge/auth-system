@@ -28,4 +28,11 @@ const register = z.object({
     .min(6, "Password must be at least 6 characters"),
 });
 
-export default { register, login };
+const verifyEmail = z.object({
+  verificatioToken: z
+    .string({ error: "Verification token is required" })
+    .trim()
+    .min(1, "Verification token is required"),
+});
+
+export default { register, login, verifyEmail };

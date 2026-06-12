@@ -12,14 +12,16 @@ router.post(
   validationMiddleware.register(validationSchema.register),
   authController.register,
 );
-
 router.post(
   "/login",
   validationMiddleware.login(validationSchema.login),
   authController.login,
 );
-
-router.post("/verify", authController.verifyEmail);
+router.post(
+  "/verify-email",
+  validationMiddleware.verifyEmail(validationSchema.verifyEmail),
+  authController.verifyEmail,
+);
 router.post("/logout", authController.logout);
 router.post("/forgot", authController.forgotPassword);
 router.post("/verify-reset-code", authController.verifyResetCode);

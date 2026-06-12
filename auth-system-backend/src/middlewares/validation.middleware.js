@@ -45,4 +45,26 @@ const register = (registrationSchema) => {
   };
 };
 
-export default { login, register };
+const verifyEmail = (verifyEmailSchema) => {
+  return (req, res, next) => {
+    try {
+      const verificationToken = verifyEmailSchema.parse(req.body);
+      req.body = verificationToken;
+      next();
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const errors = error.issues.reduce((acc, issue) => {
+          const field = issue.path.join(".");
+          acc[field] = issue.message;
+          return acc;
+        }, {});
+
+        return next(utils.appError("Validation failed", 400, errors));
+      }
+
+      next(error);
+    }
+  };
+};
+
+export default { login, register, verifyEmail };
