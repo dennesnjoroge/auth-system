@@ -1,25 +1,34 @@
-import { data, Link, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import api from "../api/axios";
 import { toast } from "react-toastify";
 
 function Login() {
   const [emailAddress, setEmailAddress] = useState("");
   const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    setIsLoading(true);
+
     try {
-      const { data } = await api.post("/api/v1/auth/login", {
+      const response = await api.post("/api/v1/auth/login", {
         emailAddress,
         password,
       });
-      toast.success(data.message);
+      toast.success(response?.data?.message || "Login was successful");
       navigate("/dashboard");
     } catch (error) {
       if (error.response) {
+        if (error.response?.data?.errors) {
+          setErrors(error.response.data.errors);
+          return;
+        }
+
         toast.error(
           error?.response?.data?.message ||
             "Something went wrong please try again.",
@@ -29,6 +38,8 @@ function Login() {
       } else {
         toast.error("An unexpected error occurred.");
       }
+    } finally {
+      setIsLoading(false);
     }
   };
   return (
@@ -60,6 +71,10 @@ function Login() {
             onChange={(e) => setEmailAddress(e.target.value)}
             required
           />
+
+          {errors.emailAddress && (
+            <span className="text-red-500">{errors.emailAddress}</span>
+          )}
         </div>
         <div className="space-y-2">
           <label
@@ -78,6 +93,10 @@ function Login() {
             required
           />
 
+          {errors.password && (
+            <span className="text-red-500">{errors.password}</span>
+          )}
+
           <Link className="underline" to="/forgot">
             Forgot password?
           </Link>
@@ -85,8 +104,9 @@ function Login() {
         <button
           type="submit"
           className="w-full bg-black text-white px-3 py-2 rounded-lg font-medium hover:opacity-90 transition cursor-pointer"
+          disabled={isLoading}
         >
-          Login
+          {isLoading ? "Logging in..." : "Login"}
         </button>
         <p>
           Don't have an account?{" "}

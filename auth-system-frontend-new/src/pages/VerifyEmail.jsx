@@ -4,9 +4,9 @@ import api from "../api/axios";
 import { toast } from "react-toastify";
 
 function VerifyEmail() {
-  const [searchParams] = useSearchParams();
+  const [params] = useSearchParams();
   const navigate = useNavigate();
-  const verificationToken = searchParams.get("token");
+  const verificationToken = params.get("token");
 
   const isVerifying = useRef(false);
 
