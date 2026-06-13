@@ -3,10 +3,10 @@ dotenv.config();
 import express from "express";
 import swaggerUi from "swagger-ui-express";
 import swaggerJSDoc from "swagger-jsdoc";
-import cors from "cors";
 import os from "os";
 import cookieParser from "cookie-parser";
 import db from "./src/config/db.js";
+import corsRouter from "./src/config/cors.js";
 import indexRoutes from "./src/routes/index.js";
 import { json } from "stream/consumers";
 
@@ -48,14 +48,7 @@ const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN;
 app.disable("x-powered-by");
 app.use(cookieParser());
 
-app.use(
-  cors({
-    origin: ["http://192.168.88.50:3000", process.env.CLIENT_ORIGIN],
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  }),
-);
+app.use(corsRouter);
 
 app.use(express.json({ limit: "1mb" }));
 

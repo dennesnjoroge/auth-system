@@ -29,7 +29,19 @@ function Register() {
         password,
       });
       toast.success(data.message);
+
+      setFirstName("");
+      setLastName("");
+      setEmailAddress("");
+      setPassword("");
+      setRepeatPassword("");
     } catch (error) {
+      setFirstName("");
+      setLastName("");
+      setEmailAddress("");
+      setPassword("");
+      setRepeatPassword("");
+
       if (error.response) {
         if (error.response?.data?.errors) {
           setErrors(error.response.data.errors);

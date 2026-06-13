@@ -1,4 +1,4 @@
-import { data, Link } from "react-router-dom";
+import { data, Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import api from "../api/axios";
 import { toast } from "react-toastify";
@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 function Login() {
   const [emailAddress, setEmailAddress] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -15,17 +16,18 @@ function Login() {
         emailAddress,
         password,
       });
-      console.log(data);
+      toast.success(data.message);
+      navigate("/dashboard");
     } catch (error) {
       if (error.response) {
-        toast.error(error?.response?.data?.message);
-
-        console.log("Status Code:", error.response.status);
-        console.log("Server Error Data:", error.response.data.message);
+        toast.error(
+          error?.response?.data?.message ||
+            "Something went wrong please try again.",
+        );
       } else if (error.request) {
-        console.log("No response received:", error.request);
+        toast.error("Network error. Please check your internet connection.");
       } else {
-        console.log("Error Message:", error.message);
+        toast.error("An unexpected error occurred.");
       }
     }
   };
@@ -75,6 +77,10 @@ function Login() {
             placeholder="********"
             required
           />
+
+          <Link className="underline" to="/forgot">
+            Forgot password?
+          </Link>
         </div>
         <button
           type="submit"

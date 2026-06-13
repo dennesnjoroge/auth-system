@@ -157,7 +157,7 @@ const verifyEmail = async (verificationToken) => {
     if (new Date(expires_at).getTime() < Date.now()) {
       // delete expired token
       await connection.execute(
-        `DELETE FROM verification_token WHERE user_id = ?`,
+        `DELETE FROM verification_tokens WHERE user_id = ?`,
         [user_id],
       );
 

@@ -7,25 +7,27 @@ const login = z.object({
     .toLowerCase(),
   password: z
     .string({ error: "Password is required" })
-    .min(6, "Password must be at least 6 characters"),
+    .min(1, "Password is required"),
 });
 
 const register = z.object({
   firstName: z
     .string({ error: "First name is required" })
     .trim()
-    .min(1, "First name is required"),
+    .min(1, "First name is required")
+    .max(50, "First name must not exceed 50 characters"),
   lastName: z
     .string({ error: "Last name is required" })
     .trim()
-    .min(1, "Last name is required"),
+    .min(1, "Last name is required")
+    .max(50, "Last name must not exceed 50 characters"),
   emailAddress: z
     .string({ error: "Email address is required" })
     .email("Invalid email address")
     .toLowerCase(),
   password: z
     .string({ error: "Password is required" })
-    .min(6, "Password must be at least 6 characters"),
+    .min(8, "Password must be at least 8 characters"),
 });
 
 const verifyEmail = z.object({
