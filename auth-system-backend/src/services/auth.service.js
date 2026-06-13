@@ -1,13 +1,9 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import db from "../config/db.js";
-import jwt from "jsonwebtoken";
 import utils from "../utils/utils.js";
 import emailService from "./email.service.js";
 import alertService from "./alert.service.js";
-import pool from "../config/db.js";
-
-const SALT_ROUNDS = 10;
 
 const login = async (emailAddress, password) => {
   try {
@@ -48,20 +44,11 @@ const login = async (emailAddress, password) => {
       const { verificationToken, linkExpiryTime } = await utils.resendEmail(
         user.id,
       );
-      const verificationLink = `${process.env.CLIENT_ORIGIN}/verify?token=${verificationToken}`;
-      emailService
-        .signupEmail(
-          `${user.first_name} ${user.last_name}`,
-          user.email_address,
-          verificationLink,
-          linkExpiryTime,
-        )
-        .catch((emailError) =>
-          console.error(
-            "Resend verification email Error: ",
-            emailError.message,
-          ),
-        );
+      emailService.signupEmail(
+        `${user.first_name} ${user.last_name}`,
+        user.email_address,
+        verificationToken,
+      );
 
       throw utils.appError(
         "Email not verified. We have sent a new link to your inbox",
@@ -69,14 +56,22 @@ const login = async (emailAddress, password) => {
       );
     }
 
-    return utils.signAccessToken({ id: user.id, email: user.email_address });
-  } catch (error) {
-    if (error.isAppError) {
-      throw error;
-    }
+    const accessToken = utils.signAccessToken(user.id, user.email_address);
+    const refreshToken = utils.signRefreshToken(user.id);
 
-    console.error("Login Service Critical Error: ", error.message);
-    throw utils.appError("Internal Server Error", 500);
+    // hash refresh token
+    const refreshTokenHash = crypto.hash("sha256", refreshToken, "hex");
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    // store hash in db
+    await db.execute(
+      `INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE token_hash = VALUES(token_hash), expires_at = VALUES(expires_at)`,
+      [user.id, refreshTokenHash, expiresAt],
+    );
+
+    return { accessToken, refreshToken };
+  } catch (error) {
+    throw error;
   }
 };
 
@@ -227,7 +222,7 @@ const forgotPassword = async (emailAddress) => {
       utils.generateresetToken();
 
     // store token hash in db
-    await pool.execute(
+    await db.execute(
       `INSERT INTO reset_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE token_hash = VALUES(token_hash), expires_at = VALUES(expires_at)`,
       [id, resetTokenHash, expiresAt],
     );

@@ -10,16 +10,24 @@ const saltRounds = 10;
 
 const login = async (req, res, next) => {
   try {
-    const accessToken = await authService.login(
-      normalizedEmail,
-      normalizedPassword,
+    const { emailAddress, password } = req.body;
+    const { accessToken, refreshToken } = await authService.login(
+      emailAddress,
+      password,
     );
 
     res.cookie("_at", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 1000,
+      maxAge: 15 * 60 * 1000,
+    });
+
+    res.cookie("_rt", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     return res.status(200).json({
