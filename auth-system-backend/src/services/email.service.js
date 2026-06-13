@@ -44,7 +44,7 @@ const onboardingEmail = async (fullName, emailAddress) => {
 };
 
 const forgotPassword = async (fullName, emailAddress, resetToken) => {
-  const resetLink = `${BASE_URL}/forgot?token=${resetToken}`;
+  const resetLink = `${BASE_URL}/forgot/flow?token=${resetToken}`;
   try {
     await resend.emails.send({
       from: `"Authentication System" <onboarding@resend.dev>`,
