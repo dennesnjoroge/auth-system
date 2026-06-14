@@ -8,13 +8,16 @@ import alertService from "./alert.service.js";
 const login = async (emailAddress, password) => {
   try {
     const [rows] = await db.execute(
-      "SELECT id, first_name, last_name, email_address, email_verified, password_hash FROM users WHERE email_address = ?",
+      "SELECT id, first_name, last_name, email_address, email_verified, role, password_hash FROM users WHERE email_address = ?",
       [emailAddress],
     );
 
     if (rows.length === 0) {
       throw utils.appError("Incorrect email or password", 401);
     }
+
+    // destructure user data
+    const { id, first_name, last_name, email_address, role } = rows[0]; // for returning
 
     const user = rows[0];
 
@@ -69,7 +72,15 @@ const login = async (emailAddress, password) => {
       [user.id, refreshTokenHash, expiresAt],
     );
 
-    return { accessToken, refreshToken };
+    return {
+      id,
+      first_name,
+      last_name,
+      email_address,
+      role,
+      accessToken,
+      refreshToken,
+    };
   } catch (error) {
     throw error;
   }
@@ -175,7 +186,7 @@ const verifyEmail = async (verificationToken) => {
     );
 
     const [userRows] = await connection.execute(
-      `SELECT first_name, last_name, email_address FROM users WHERE id = ?`,
+      `SELECT first_name, last_name, email_address, role FROM users WHERE id = ?`,
       [user_id],
     );
 
@@ -187,7 +198,7 @@ const verifyEmail = async (verificationToken) => {
     }
 
     // destructure user data
-    const { first_name, last_name, email_address } = userRows[0];
+    const { first_name, last_name, email_address, role } = userRows[0];
 
     await connection.commit();
 
@@ -207,7 +218,15 @@ const verifyEmail = async (verificationToken) => {
       [user_id, refreshTokenHash, expiresAt],
     );
 
-    return { accessToken, refreshToken };
+    return {
+      user_id,
+      first_name,
+      last_name,
+      email_address,
+      role,
+      accessToken,
+      refreshToken,
+    };
   } catch (error) {
     await connection.rollback();
 

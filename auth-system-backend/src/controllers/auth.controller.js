@@ -11,10 +11,15 @@ const saltRounds = 10;
 const login = async (req, res, next) => {
   try {
     const { emailAddress, password } = req.body;
-    const { accessToken, refreshToken } = await authService.login(
-      emailAddress,
-      password,
-    );
+    const {
+      id,
+      first_name,
+      last_name,
+      email_address,
+      role,
+      accessToken,
+      refreshToken,
+    } = await authService.login(emailAddress, password);
 
     res.cookie("_at", accessToken, {
       httpOnly: true,
@@ -33,6 +38,13 @@ const login = async (req, res, next) => {
     return res.status(200).json({
       status: "success",
       message: "Login was successful",
+      user: {
+        userId: id,
+        firstName: first_name,
+        lastName: last_name,
+        emailAddress: email_address,
+        userRole: role,
+      },
     });
   } catch (error) {
     next(error);
@@ -57,8 +69,15 @@ const verifyEmail = async (req, res, next) => {
   try {
     const { verificationToken } = req.body;
 
-    const { accessToken, refreshToken } =
-      await authService.verifyEmail(verificationToken);
+    const {
+      id,
+      first_name,
+      last_name,
+      email_address,
+      role,
+      accessToken,
+      refreshToken,
+    } = await authService.verifyEmail(verificationToken);
 
     res.cookie("_at", accessToken, {
       httpOnly: true,
@@ -77,6 +96,13 @@ const verifyEmail = async (req, res, next) => {
     return res.status(200).json({
       status: "success",
       message: "Email verified successfully",
+      user: {
+        userId: id,
+        firstName: first_name,
+        lastName: last_name,
+        emailAddress: email_address,
+        userRole: role,
+      },
     });
   } catch (error) {
     next(error);
