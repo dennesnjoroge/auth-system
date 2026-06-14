@@ -18,14 +18,14 @@ const login = async (req, res, next) => {
 
     res.cookie("_at", accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "development",
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 15 * 60 * 1000,
     });
 
     res.cookie("_rt", refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "development",
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
@@ -57,11 +57,26 @@ const verifyEmail = async (req, res, next) => {
   try {
     const { verificationToken } = req.body;
 
-    await authService.verifyEmail(verificationToken);
+    const { accessToken, refreshToken } =
+      await authService.verifyEmail(verificationToken);
+
+    res.cookie("_at", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 15 * 60 * 1000,
+    });
+
+    res.cookie("_rt", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
     return res.status(200).json({
       status: "success",
-      message: "Email verified successfully. You can now log in",
+      message: "Email verified successfully",
     });
   } catch (error) {
     next(error);
