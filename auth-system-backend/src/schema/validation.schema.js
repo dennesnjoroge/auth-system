@@ -32,26 +32,26 @@ const register = z.object({
 
 const verifyEmail = z.object({
   verificationToken: z
-    .string({ error: "Verification token is required" })
+    .string({ error: "Invalid or expired verification token" })
     .trim()
-    .min(1, "Verification token is required"),
+    .length(64, { error: "Invalid or expired verification token" }),
 });
 
 const forgotPassword = z.object({
   emailAddress: z
     .string({ error: "Email address is required" })
-    .email("Invalid email address")
+    .email({ error: "Invalid email address" })
     .toLowerCase(),
 });
 
 const resetPassword = z.object({
   resetToken: z
-    .string({ error: "Reset token is required" })
+    .string({ error: "Invalid or expired reset token" })
     .trim()
-    .min(1, "Reset token is required"),
+    .length(64, { error: "Invalid or expired reset token" }),
   password: z
     .string({ error: "Password is required" })
-    .min(6, "Password must be at least 6 characters"),
+    .min(8, { error: "Password must be at least 8 characters" }),
 });
 
 export default { register, login, verifyEmail, forgotPassword, resetPassword };
