@@ -26,12 +26,12 @@ function ResetPassword() {
     setErrors({});
 
     if (password.length < 8) {
-      setErrors({ password: "Password must be at least 6 characters long." });
+      setErrors({ password: "Password must be at least 8 characters long." });
       return;
     }
 
     if (password !== repeatPassword) {
-      setErrors({ repeatPassword: "Passwords do not match." });
+      setErrors({ password: "Passwords do not match." });
       return;
     }
 
@@ -43,11 +43,18 @@ function ResetPassword() {
         password,
       });
       toast.success(response?.data?.message || "Password reset successful");
-      navigate("/login");
+      navigate("/login", { replace: true });
     } catch (error) {
       if (error.response) {
         if (error.response?.data?.errors) {
-          setErrors(error.response.data.errors);
+          const serverErrors = error.response?.data?.errors;
+
+          setErrors(serverErrors);
+
+          if (serverErrors.resetToken) {
+            toast.error(serverErrors.resetToken);
+          }
+
           return;
         }
 
@@ -60,6 +67,7 @@ function ResetPassword() {
       } else {
         toast.error("An unexpected error occurred.");
       }
+      navigate("/login", { replace: true });
     } finally {
       setIsLoading(false);
     }

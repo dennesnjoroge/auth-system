@@ -21,7 +21,7 @@ function Login() {
         password,
       });
       toast.success(response?.data?.message || "Login was successful");
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
     } catch (error) {
       if (error.response) {
         if (error.response?.data?.errors) {
@@ -97,7 +97,7 @@ function Login() {
             <span className="text-red-500">{errors.password}</span>
           )}
 
-          <Link className="underline" to="/forgot">
+          <Link className="underline" to="/forgot" state={{ fromLogin: true }}>
             Forgot password?
           </Link>
         </div>

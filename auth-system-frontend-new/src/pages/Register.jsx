@@ -10,6 +10,7 @@ function Register() {
   const [password, setPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,13 +23,18 @@ function Register() {
         return;
       }
 
-      const { data } = await api.post("/api/v1/auth/register", {
+      setLoading(true);
+
+      const response = await api.post("/api/v1/auth/register", {
         firstName,
         lastName,
         emailAddress,
         password,
       });
-      toast.success(data.message);
+      toast.success(
+        response?.data?.message ||
+          "Registration was successful, check your email",
+      );
 
       setFirstName("");
       setLastName("");
@@ -36,12 +42,6 @@ function Register() {
       setPassword("");
       setRepeatPassword("");
     } catch (error) {
-      setFirstName("");
-      setLastName("");
-      setEmailAddress("");
-      setPassword("");
-      setRepeatPassword("");
-
       if (error.response) {
         if (error.response?.data?.errors) {
           setErrors(error.response.data.errors);
@@ -57,6 +57,8 @@ function Register() {
       } else {
         toast.error("An unexpected error occurred.");
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -184,7 +186,7 @@ function Register() {
           type="submit"
           className="bg-black text-white font-medium w-full mt-2 px-3 py-2 rounded-lg cursor-pointer hover:opacity-90 transition"
         >
-          Register
+          {loading ? "Registering..." : "Register"}
         </button>
         <p>
           Already have an account?{" "}

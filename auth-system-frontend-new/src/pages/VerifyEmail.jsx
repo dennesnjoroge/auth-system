@@ -12,7 +12,7 @@ function VerifyEmail() {
 
   useEffect(() => {
     if (!verificationToken) {
-      navigate("/login");
+      navigate("/login", { replace: true });
       return;
     }
 
@@ -25,7 +25,7 @@ function VerifyEmail() {
           verificationToken,
         });
         toast.success(response?.data?.message || "Verification Successful");
-        navigate("/login");
+        navigate("/dashboard", { replace: true });
       } catch (error) {
         if (error.response) {
           toast.error(
@@ -37,7 +37,7 @@ function VerifyEmail() {
         } else {
           toast.error("An unexpected error occurred.");
         }
-        navigate("/login");
+        navigate("/login", { replace: true });
       }
     };
 

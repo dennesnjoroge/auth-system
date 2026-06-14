@@ -1,28 +1,44 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import api from "../api/axios";
 import { toast } from "react-toastify";
 
 function ForgotPassword() {
   const [emailAddress, setEmailAddress] = useState("");
+  const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const validRef = location.state?.fromLogin;
+
+  useEffect(() => {
+    if (!validRef) {
+      navigate("/login", { replace: true });
+    }
+  }, [validRef, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     setErrors({});
 
+    setLoading(true);
+
     try {
-      const { data } = await api.post("/api/v1/auth/forgot-password", {
+      const response = await api.post("/api/v1/auth/forgot-password", {
         emailAddress,
       });
-      toast.success(data.message);
-      navigate("/login");
+      toast.success(
+        response?.data?.message || "A reset link has been sent to your email",
+      );
+      navigate("/login", { replace: true });
     } catch (error) {
       if (error.response) {
         if (error.response?.data?.errors) {
-          setErrors(error.response.data.errors);
+          setErrors(
+            error?.response?.data?.errors || "Something went wrong try again",
+          );
           return;
         }
 
@@ -35,6 +51,8 @@ function ForgotPassword() {
       } else {
         toast.error("An unexpected error occurred.");
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -76,8 +94,9 @@ function ForgotPassword() {
         <button
           type="submit"
           className="w-full bg-black text-white px-3 py-2 rounded-lg font-medium hover:opacity-90 transition cursor-pointer"
+          disabled={loading}
         >
-          Send reset link
+          {loading ? "Sending..." : "Send reset link"}
         </button>
       </form>
     </div>
