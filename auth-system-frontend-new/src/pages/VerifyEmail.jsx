@@ -24,6 +24,7 @@ function VerifyEmail() {
         const response = await api.post("/api/v1/auth/verify-email", {
           verificationToken,
         });
+        console.log(response.data);
         toast.success(response?.data?.message || "Verification Successful");
         navigate("/dashboard", { replace: true });
       } catch (error) {
