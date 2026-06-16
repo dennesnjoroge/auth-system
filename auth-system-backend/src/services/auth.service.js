@@ -8,7 +8,7 @@ import alertService from "./alert.service.js";
 const login = async (emailAddress, password) => {
   try {
     const [rows] = await db.execute(
-      "SELECT id, first_name, last_name, email_address, email_verified, role, password_hash FROM users WHERE email_address = ?",
+      "SELECT * FROM users WHERE email_address = ?",
       [emailAddress],
     );
 
@@ -17,7 +17,16 @@ const login = async (emailAddress, password) => {
     }
 
     // destructure user data
-    const { id, first_name, last_name, email_address, role } = rows[0]; // for returning
+    const {
+      id,
+      first_name,
+      last_name,
+      email_address,
+      email_verified,
+      role,
+      created_at,
+      updated_at,
+    } = rows[0]; // for returning
 
     const user = rows[0];
 
@@ -73,7 +82,10 @@ const login = async (emailAddress, password) => {
       first_name,
       last_name,
       email_address,
+      email_verified,
       role,
+      created_at,
+      updated_at,
       accessToken,
       refreshToken,
     };

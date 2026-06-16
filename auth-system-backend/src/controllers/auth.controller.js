@@ -14,7 +14,10 @@ const login = async (req, res, next) => {
       first_name,
       last_name,
       email_address,
+      email_verified,
       role,
+      created_at,
+      updated_at,
       accessToken,
       refreshToken,
     } = await authService.login(emailAddress, password);
@@ -41,7 +44,10 @@ const login = async (req, res, next) => {
         firstName: first_name,
         lastName: last_name,
         emailAddress: email_address,
+        emailVerified: email_verified ? true : false,
         userRole: role,
+        createdAt: created_at,
+        updatedAt: updated_at,
       },
     });
   } catch (error) {
@@ -72,7 +78,10 @@ const verifyEmail = async (req, res, next) => {
       first_name,
       last_name,
       email_address,
+      email_verified,
       role,
+      created_at,
+      updated_at,
       accessToken,
       refreshToken,
     } = await authService.verifyEmail(verificationToken);
@@ -99,7 +108,10 @@ const verifyEmail = async (req, res, next) => {
         firstName: first_name,
         lastName: last_name,
         emailAddress: email_address,
+        emailVerified: email_verified,
         userRole: role,
+        createdAt: created_at,
+        updated_at: updated_at,
       },
     });
   } catch (error) {
