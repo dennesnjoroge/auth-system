@@ -6,8 +6,6 @@ import authService from "../services/auth.service.js";
 
 import validator from "validator";
 
-const saltRounds = 10;
-
 const login = async (req, res, next) => {
   try {
     const { emailAddress, password } = req.body;
@@ -170,14 +168,57 @@ const changePassword = async (req, res, next) => {
   }
 };
 
-export const checkAuthToken = async (req, res) => {
-  const token = req.cookies.loginToken;
-
-  if (!token) {
-    return res.status(401).json({ authenticated: false });
+const session = async (req, res, next) => {
+  try {
+    console.log(req.user);
+    res.status(200).json({
+      status: "success",
+      user: {
+        firstName: "Dennes",
+        lastName: "Njoroge",
+      },
+    });
+  } catch (error) {
+    next(error);
   }
+};
 
-  return res.status(200).json({ authenticated: true });
+const refresh = async (req, res, next) => {
+  try {
+    const { userId, refreshToken } = req.user;
+
+    const result = await authService.refresh(userId, refreshToken);
+
+    if (!result || !result.accessToken || !result.newRefreshToken) {
+      res.clearCookie("_at");
+      res.clearCookie("_rt");
+
+      return res.status(401).json({
+        status: "fail",
+        message: "Session expired or invalid. Please log in again.",
+      });
+    }
+
+    const { accessToken, newRefreshToken } = result;
+
+    res.cookie("_at", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 15 * 60 * 1000,
+    });
+
+    res.cookie("_rt", newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return res.sendStatus(200);
+  } catch (error) {
+    next(error);
+  }
 };
 
 export default {
@@ -188,4 +229,6 @@ export default {
   forgotPassword,
   resetPassword,
   changePassword,
+  session,
+  refresh,
 };

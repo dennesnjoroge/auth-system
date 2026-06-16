@@ -44,11 +44,9 @@ const login = async (emailAddress, password) => {
         }
       }
 
-      const { verificationToken, linkExpiryTime } = await utils.resendEmail(
-        user.id,
-      );
+      const { verificationToken, linkExpiryTime } = await utils.resendEmail(id);
       emailService.signupEmail(
-        `${user.first_name} ${user.last_name}`,
+        `${first_name} ${last_name}`,
         user.email_address,
         verificationToken,
       );
@@ -59,17 +57,15 @@ const login = async (emailAddress, password) => {
       );
     }
 
-    const accessToken = utils.signAccessToken(user.id, user.email_address);
-    const refreshToken = utils.signRefreshToken(user.id);
-
-    // hash refresh token
+    const accessToken = utils.signAccessToken(id);
+    const refreshToken = utils.signRefreshToken(id);
     const refreshTokenHash = crypto.hash("sha256", refreshToken, "hex");
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     // store hash in db
     await db.execute(
-      `INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE token_hash = VALUES(token_hash), expires_at = VALUES(expires_at)`,
-      [user.id, refreshTokenHash, expiresAt],
+      `INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)`,
+      [id, refreshTokenHash, expiresAt],
     );
 
     return {
@@ -371,6 +367,68 @@ const changePassword = async (currentPassword, newPassword, userId) => {
   }
 };
 
+const refresh = async (userId, refreshToken) => {
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+    // hash token
+    const incomingHash = crypto.hash("sha256", refreshToken, "hex");
+
+    // checkup db
+    const [rows] = await db.execute(
+      `SELECT id, user_id, is_used, expires_at FROM refresh_tokens WHERE token_hash = ?`,
+      [incomingHash],
+    );
+
+    if (rows.length === 0) {
+      return { accessToken: null, newRefreshToken: null };
+    }
+
+    const { id, user_id, is_used, expires_at } = rows[0];
+
+    // detect token resuse
+    if (is_used === true) {
+      await db.execute(`DELETE FROM refresh_tokens WHERE id = ?`, [id]);
+      throw new Error(
+        "Security Breach: Token reuse detected. Logging out all sessions.",
+      );
+    }
+
+    if (new Date() > new Date(expires_at)) {
+      // Token expired naturally. Just remove it.
+      await db.execute(`DELETE FROM refresh_tokens WHERE id = ?`, [id]);
+      return { accessToken: null, newRefreshToken: null };
+    }
+
+    // new tokens
+    const accessToken = utils.signAccessToken(user_id);
+    const newRefreshToken = utils.signRefreshToken(user_id);
+    const refreshTokenHash = crypto.hash("sha256", newRefreshToken, "hex");
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    // insert in db
+    await connection.execute(
+      `INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)`,
+      [user_id, refreshTokenHash, expiresAt],
+    );
+
+    // mark old token as used
+    await connection.execute(
+      `UPDATE refresh_tokens SET is_used = ? WHERE id = ?`,
+      [1, id],
+    );
+
+    await connection.commit();
+
+    return { accessToken, newRefreshToken };
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+};
+
 export default {
   login,
   register,
@@ -378,4 +436,5 @@ export default {
   forgotPassword,
   resetPassword,
   changePassword,
+  refresh,
 };

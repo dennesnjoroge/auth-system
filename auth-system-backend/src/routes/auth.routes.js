@@ -1,5 +1,6 @@
 import authController from "../controllers/auth.controller.js";
 import validationMiddleware from "../middlewares/validation.middleware.js";
+import authMiddleware from "../middlewares/auth.middleware.js";
 import validationSchema from "../schema/validation.schema.js";
 
 import express from "express";
@@ -34,6 +35,8 @@ router.post(
   authController.resetPassword,
 );
 router.post("/change-password", auth, authController.changePassword);
+router.get("/session", authMiddleware.auth, authController.session);
+router.post("/refresh", authMiddleware.refresh, authController.refresh);
 //router.get("/me", checkAuthToken);
 
 export default router;

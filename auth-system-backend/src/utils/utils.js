@@ -12,14 +12,18 @@ const appError = (message, statusCode, errors = null) => {
 };
 
 // sign access token
-const signAccessToken = (id, email) => {
-  return jwt.sign({ sub: id, email: email }, process.env.JWT_SECRET, {
+const signAccessToken = (id) => {
+  const jti = crypto.randomUUID();
+  return jwt.sign({ sub: id, jti: jti }, process.env.JWT_SECRET, {
     expiresIn: "15m",
   });
 };
 
 const signRefreshToken = (id) => {
-  return jwt.sign({ sub: id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+  const jti = crypto.randomUUID();
+  return jwt.sign({ sub: id, jti: jti }, process.env.JWT_SECRET, {
+    expiresIn: "7d",
+  });
 };
 
 // password regex utility function
