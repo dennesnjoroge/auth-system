@@ -8,14 +8,13 @@ const auth = (req, res, next) => {
     const { _at: authToken } = req.cookies;
 
     if (!authToken) {
-      throw utils.appError("Unauthorized", 401);
+      return res.sendStatus(401);
     }
 
     // decode auth token
     const decoded = jwt.verify(authToken, process.env.JWT_SECRET);
     const userId = decoded.sub;
-    const userEmail = decoded.email;
-    req.user = { userId, userEmail };
+    req.user = { userId };
     next();
   } catch (error) {
     next(error);

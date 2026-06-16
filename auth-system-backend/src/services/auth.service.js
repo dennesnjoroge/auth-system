@@ -4,6 +4,7 @@ import db from "../config/db.js";
 import utils from "../utils/utils.js";
 import emailService from "./email.service.js";
 import alertService from "./alert.service.js";
+import { error } from "console";
 
 const login = async (emailAddress, password) => {
   try {
@@ -77,7 +78,7 @@ const login = async (emailAddress, password) => {
       [id, refreshTokenHash, expiresAt],
     );
 
-    return {
+    const userProfile = utils.buildUserProfile(
       id,
       first_name,
       last_name,
@@ -86,6 +87,10 @@ const login = async (emailAddress, password) => {
       role,
       created_at,
       updated_at,
+    );
+
+    return {
+      userProfile,
       accessToken,
       refreshToken,
     };
@@ -194,7 +199,7 @@ const verifyEmail = async (verificationToken) => {
     );
 
     const [userRows] = await connection.execute(
-      `SELECT first_name, last_name, email_address, role FROM users WHERE id = ?`,
+      `SELECT * FROM users WHERE id = ?`,
       [user_id],
     );
 
@@ -206,7 +211,16 @@ const verifyEmail = async (verificationToken) => {
     }
 
     // destructure user data
-    const { first_name, last_name, email_address, role } = userRows[0];
+    const {
+      id,
+      first_name,
+      last_name,
+      email_address,
+      email_verified,
+      role,
+      created_at,
+      updated_at,
+    } = userRows[0];
 
     await connection.commit();
 
@@ -226,12 +240,19 @@ const verifyEmail = async (verificationToken) => {
       [user_id, refreshTokenHash, expiresAt],
     );
 
-    return {
-      user_id,
+    const userProfile = utils.buildUserProfile(
+      id,
       first_name,
       last_name,
       email_address,
+      email_verified,
       role,
+      created_at,
+      updated_at,
+    );
+
+    return {
+      userProfile,
       accessToken,
       refreshToken,
     };
@@ -379,6 +400,42 @@ const changePassword = async (currentPassword, newPassword, userId) => {
   }
 };
 
+const session = async (userId) => {
+  try {
+    const [rows] = await db.execute(`SELECT * FROM USERS WHERE id = ?`, [
+      userId,
+    ]);
+
+    if (rows.length === 0) {
+      throw new Error("User not found");
+    }
+
+    const {
+      id,
+      first_name,
+      last_name,
+      email_address,
+      email_verified,
+      role,
+      created_at,
+      updated_at,
+    } = rows[0];
+
+    return utils.buildUserProfile(
+      id,
+      first_name,
+      last_name,
+      email_address,
+      email_verified,
+      role,
+      created_at,
+      updated_at,
+    );
+  } catch (error) {
+    throw error;
+  }
+};
+
 const refresh = async (userId, refreshToken) => {
   const connection = await db.getConnection();
   try {
@@ -448,5 +505,6 @@ export default {
   forgotPassword,
   resetPassword,
   changePassword,
+  session,
   refresh,
 };

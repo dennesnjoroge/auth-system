@@ -9,18 +9,10 @@ import validator from "validator";
 const login = async (req, res, next) => {
   try {
     const { emailAddress, password } = req.body;
-    const {
-      id,
-      first_name,
-      last_name,
-      email_address,
-      email_verified,
-      role,
-      created_at,
-      updated_at,
-      accessToken,
-      refreshToken,
-    } = await authService.login(emailAddress, password);
+    const { userProfile, accessToken, refreshToken } = await authService.login(
+      emailAddress,
+      password,
+    );
 
     res.cookie("_at", accessToken, {
       httpOnly: true,
@@ -39,16 +31,7 @@ const login = async (req, res, next) => {
     return res.status(200).json({
       status: "success",
       message: "Login was successful",
-      user: {
-        userId: id,
-        firstName: first_name,
-        lastName: last_name,
-        emailAddress: email_address,
-        emailVerified: email_verified ? true : false,
-        userRole: role,
-        createdAt: created_at,
-        updatedAt: updated_at,
-      },
+      payload: userProfile,
     });
   } catch (error) {
     next(error);
@@ -73,18 +56,8 @@ const verifyEmail = async (req, res, next) => {
   try {
     const { verificationToken } = req.body;
 
-    const {
-      id,
-      first_name,
-      last_name,
-      email_address,
-      email_verified,
-      role,
-      created_at,
-      updated_at,
-      accessToken,
-      refreshToken,
-    } = await authService.verifyEmail(verificationToken);
+    const { userProfile, accessToken, refreshToken } =
+      await authService.verifyEmail(verificationToken);
 
     res.cookie("_at", accessToken, {
       httpOnly: true,
@@ -103,16 +76,7 @@ const verifyEmail = async (req, res, next) => {
     return res.status(200).json({
       status: "success",
       message: "Email verified successfully",
-      user: {
-        userId: id,
-        firstName: first_name,
-        lastName: last_name,
-        emailAddress: email_address,
-        emailVerified: email_verified,
-        userRole: role,
-        createdAt: created_at,
-        updated_at: updated_at,
-      },
+      payload: userProfile,
     });
   } catch (error) {
     next(error);
@@ -182,13 +146,13 @@ const changePassword = async (req, res, next) => {
 
 const session = async (req, res, next) => {
   try {
-    console.log(req.user);
+    const { userId } = req.user;
+
+    const session = await authService.session(userId);
+
     res.status(200).json({
       status: "success",
-      user: {
-        firstName: "Dennes",
-        lastName: "Njoroge",
-      },
+      payload: session,
     });
   } catch (error) {
     next(error);

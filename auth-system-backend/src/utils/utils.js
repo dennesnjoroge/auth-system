@@ -11,6 +11,28 @@ const appError = (message, statusCode, errors = null) => {
   return error;
 };
 
+const buildUserProfile = (
+  userId,
+  firstName,
+  lastName,
+  emailAddress,
+  emailVerified,
+  role,
+  createdAt,
+  updatedAt,
+) => {
+  return {
+    userId,
+    firstName,
+    lastName,
+    emailAddress,
+    emailVerified: emailVerified ? true : false,
+    role,
+    createdAt,
+    updatedAt,
+  };
+};
+
 // sign access token
 const signAccessToken = (id) => {
   const jti = crypto.randomUUID();
@@ -112,6 +134,7 @@ const generateresetToken = () => {
 
 export default {
   appError,
+  buildUserProfile,
   signAccessToken,
   signRefreshToken,
   passwordRegex,
