@@ -63,7 +63,8 @@ const passwordAlert = async (
   timestamp,
   ipAddress,
   deviceInfo,
-  location,
+  city,
+  country,
 ) => {
   try {
     await resend.emails.send({
@@ -75,7 +76,8 @@ const passwordAlert = async (
         timestamp,
         ipAddress,
         deviceInfo,
-        location,
+        city,
+        country,
       ),
     });
   } catch (error) {

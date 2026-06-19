@@ -180,8 +180,8 @@ const verifyEmail = (fullName, verificationLink) => {
                   "
                 >
                   If you have any questions or need help, reach us anytime at
-                  <a style="color: #e0e0e0; text-decoration: underline;" href="mailto:support@yourdomain.com"
-                    >support@yourdomain.com</a
+                  <a style="color: #e0e0e0; text-decoration: underline;" href="mailto:support@authsystem.com"
+                    >support@authsystem.com</a
                   >
                 </p>
                 <p
@@ -341,8 +341,8 @@ const onboardingEmail = (fullName, emailAddress) => {
                   "
                 >
                   If you have any questions or need help, reach us anytime at
-                  <a style="color: #e0e0e0; text-decoration: underline;" href="mailto:support@yourdomain.com"
-                    >support@yourdomain.com</a
+                  <a style="color: #e0e0e0; text-decoration: underline;" href="mailto:support@authsystem.com"
+                    >support@authsystem.com</a
                   >
                 </p>
                 <p
@@ -558,8 +558,8 @@ const forgotPassword = (fullName, resetLink) => {
                   If you have any questions or need help, reach us anytime at
                   <a
                     style="color: #e0e0e0; text-decoration: underline"
-                    href="mailto:support@yourdomain.com"
-                    >support@yourdomain.com</a
+                    href="mailto:support@authsystem.com"
+                    >support@authsystem.com</a
                   >
                 </p>
                 <p
@@ -591,7 +591,8 @@ const passwordAlert = (
   formattedTime,
   ipAddress,
   deviceInfo,
-  location,
+  city,
+  country,
 ) => {
   return `
   <!doctype html>
@@ -746,7 +747,7 @@ const passwordAlert = (
                           color: #000000;
                         "
                       >
-                        ${location}
+                        ${city} ${country}
                       </span>
                     </td>
                   </tr>
@@ -788,8 +789,8 @@ const passwordAlert = (
                   "
                 >
                   If you have any questions or need help, reach us anytime at
-                  <a style="color: #e0e0e0" href="mailto:support@yourdomain.com"
-                    >support@yourdomain.com</a
+                  <a style="color: #e0e0e0" href="mailto:support@authsystem.com"
+                    >support@authsystem.com</a
                   >
                 </p>
                 <p

@@ -374,7 +374,7 @@ const resetPassword = async (resetToken, password, req) => {
     ]);
 
     await connection.commit();
-    alertService.recordPasswordChange(user_id, req, "Manual");
+    alertService.recordPasswordChange(user_id, req);
   } catch (error) {
     await connection.rollback();
     throw error;

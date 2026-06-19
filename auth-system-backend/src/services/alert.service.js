@@ -2,19 +2,20 @@ import utils from "../utils/utils.js";
 import db from "../config/db.js";
 import emailService from "./email.service.js";
 
-const recordPasswordChange = async (userId, req, changeMethod) => {
+const recordPasswordChange = async (userId, req) => {
   //const ipAddress = utils.getClientIP(req);
   const ipAddress = "217.199.148.245";
 
   const userAgent = req.headers["user-agent"];
   const deviceInfo = utils.parseUserAgent(userAgent);
-  const location = await utils.getLocationFromIP(ipAddress);
+  const { city, country } = await utils.getLocationFromIP(ipAddress);
+  console.log(city, country);
 
   await db.execute(
     `INSERT INTO password_change_history 
-   (user_id, ip_address, user_agent, device_info, location, change_method)
+   (user_id, ip_address, city, country, user_agent, device_info)
    VALUES (?, ?, ?, ?, ?, ?)`,
-    [userId, ipAddress, userAgent, deviceInfo, location, changeMethod],
+    [userId, ipAddress, city, country, userAgent, deviceInfo],
   );
 
   const [rows] = await db.execute(
@@ -30,7 +31,8 @@ const recordPasswordChange = async (userId, req, changeMethod) => {
     new Date(),
     ipAddress,
     deviceInfo,
-    location,
+    city,
+    country,
   );
 };
 
