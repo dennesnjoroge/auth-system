@@ -1,90 +1,14 @@
-/**
- * @swagger
- * /api/dashboard:
- *   get:
- *     summary: Get authenticated user dashboard data
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: User data retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                 user:
- *                   type: object
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: User not found
- *       500:
- *         description: Server error
- */
-
-/**
- * @swagger
- * /api/update:
- *   post:
- *     summary: Update user profile
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               firstName:
- *                 type: string
- *                 example: John
- *               lastName:
- *                 type: string
- *                 example: Doe
- *               phoneNumber:
- *                 type: string
- *                 example: "0712345678"
- *     responses:
- *       200:
- *         description: Profile updated successfully
- *       401:
- *         description: Unauthorized or user not found
- *       500:
- *         description: Server error
- */
-
-/**
- * @swagger
- * /api/delete-account:
- *   post:
- *     summary: Permanently delete user account
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Account deleted successfully
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: User not found
- *       500:
- *         description: Server error
- */
-
 import express from "express";
 import { auth } from "../auth/auth.js";
 import db from "../config/db.js";
 import jwt from "jsonwebtoken";
 import emailService from "../services/email.service.js";
+import authMiddleware from "../middlewares/auth.middleware.js";
+import userController from "../controllers/user.controller.js";
 
 const router = express.Router();
+
+router.get("/profile", authMiddleware.auth, userController.profile);
 
 router.get("/dashboard", auth, async (req, res) => {
   try {
