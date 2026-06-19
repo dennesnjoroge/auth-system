@@ -35,17 +35,28 @@ const buildUserProfile = (
 
 // sign access token
 const signAccessToken = (id) => {
-  const jti = crypto.randomUUID();
-  return jwt.sign({ sub: id, jti: jti }, process.env.JWT_SECRET, {
-    expiresIn: "15m",
-  });
+  const accessTokenJti = crypto.randomUUID();
+  const accessToken = jwt.sign(
+    { sub: id, jti: accessTokenJti },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "15m",
+    },
+  );
+
+  return { accessToken };
 };
 
 const signRefreshToken = (id) => {
-  const jti = crypto.randomUUID();
-  return jwt.sign({ sub: id, jti: jti }, process.env.JWT_SECRET, {
-    expiresIn: "7d",
-  });
+  const refreshTokenJti = crypto.randomUUID();
+  const refreshToken = jwt.sign(
+    { sub: id, jti: refreshTokenJti },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "7d",
+    },
+  );
+  return { refreshToken };
 };
 
 // password regex utility function

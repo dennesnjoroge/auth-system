@@ -67,8 +67,10 @@ const login = async (emailAddress, password) => {
       );
     }
 
-    const accessToken = utils.signAccessToken(id);
-    const refreshToken = utils.signRefreshToken(id);
+    const { accessToken } = utils.signAccessToken(id);
+    const { refreshToken } = utils.signRefreshToken(id);
+
+    // hash refresh token
     const refreshTokenHash = crypto.hash("sha256", refreshToken, "hex");
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
@@ -227,8 +229,8 @@ const verifyEmail = async (verificationToken) => {
     emailService.onboardingEmail(`${first_name} ${last_name}`, email_address);
 
     // add magic login
-    const accessToken = utils.signAccessToken(user_id, email_address);
-    const refreshToken = utils.signRefreshToken(user_id);
+    const { accessToken } = utils.signAccessToken(user_id, email_address);
+    const { refreshToken } = utils.signRefreshToken(user_id);
 
     // hash refresh token
     const refreshTokenHash = crypto.hash("sha256", refreshToken, "hex");
@@ -436,7 +438,7 @@ const session = async (userId) => {
   }
 };
 
-const refresh = async (userId, refreshToken) => {
+const refresh = async (refreshToken) => {
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
@@ -444,7 +446,7 @@ const refresh = async (userId, refreshToken) => {
     const incomingHash = crypto.hash("sha256", refreshToken, "hex");
 
     // checkup db
-    const [rows] = await db.execute(
+    const [rows] = await connection.execute(
       `SELECT id, user_id, is_used, expires_at FROM refresh_tokens WHERE token_hash = ?`,
       [incomingHash],
     );
@@ -457,7 +459,7 @@ const refresh = async (userId, refreshToken) => {
 
     // detect token resuse
     if (is_used === true) {
-      await db.execute(`DELETE FROM refresh_tokens WHERE id = ?`, [id]);
+      await connection.execute(`DELETE FROM refresh_tokens WHERE id = ?`, [id]);
       throw new Error(
         "Security Breach: Token reuse detected. Logging out all sessions.",
       );
@@ -465,13 +467,13 @@ const refresh = async (userId, refreshToken) => {
 
     if (new Date() > new Date(expires_at)) {
       // Token expired naturally. Just remove it.
-      await db.execute(`DELETE FROM refresh_tokens WHERE id = ?`, [id]);
+      await connection.execute(`DELETE FROM refresh_tokens WHERE id = ?`, [id]);
       return { accessToken: null, newRefreshToken: null };
     }
 
     // new tokens
-    const accessToken = utils.signAccessToken(user_id);
-    const newRefreshToken = utils.signRefreshToken(user_id);
+    const { accessToken } = utils.signAccessToken(user_id);
+    const { refreshToken: newRefreshToken } = utils.signRefreshToken(user_id);
     const refreshTokenHash = crypto.hash("sha256", newRefreshToken, "hex");
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 

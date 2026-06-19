@@ -36,7 +36,7 @@ const refresh = (req, res, next) => {
     const userId = decoded.sub;
 
     //pass user id to controller
-    req.user = { userId, refreshToken };
+    req.refreshToken = { refreshToken };
     next();
   } catch (error) {
     if (error.name === "TokenExpiredError") {

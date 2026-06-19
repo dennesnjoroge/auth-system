@@ -161,9 +161,9 @@ const session = async (req, res, next) => {
 
 const refresh = async (req, res, next) => {
   try {
-    const { userId, refreshToken } = req.user;
+    const { refreshToken } = req.refreshToken;
 
-    const result = await authService.refresh(userId, refreshToken);
+    const result = await authService.refresh(refreshToken);
 
     if (!result || !result.accessToken || !result.newRefreshToken) {
       res.clearCookie("_at");
