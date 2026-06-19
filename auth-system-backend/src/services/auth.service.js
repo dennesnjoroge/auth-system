@@ -101,7 +101,10 @@ const login = async (emailAddress, password) => {
   }
 };
 
-const register = async ({ firstName, lastName, emailAddress, password }) => {
+const register = async (
+  { firstName, lastName, emailAddress, password },
+  req,
+) => {
   const connection = await db.getConnection();
 
   try {
@@ -126,10 +129,21 @@ const register = async ({ firstName, lastName, emailAddress, password }) => {
     const { verificationToken, verificationTokenHash, expiresAt } =
       utils.generateVerificationToken();
 
+    // get user geo-data(ip, location, timezone)
+    const { city, country, timezone } = await utils.geoData(req);
+
     // insert user in db
     const [result] = await connection.execute(
-      `INSERT INTO users (first_name, last_name, email_address, password_hash) VALUES (?, ?, ?, ?)`,
-      [firstName, lastName, emailAddress, passwordHash],
+      `INSERT INTO users (first_name, last_name, email_address, password_hash, city, country, timezone) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        firstName,
+        lastName,
+        emailAddress,
+        passwordHash,
+        city,
+        country,
+        timezone,
+      ],
     );
 
     const userId = result.insertId;
@@ -242,16 +256,7 @@ const verifyEmail = async (verificationToken) => {
       [user_id, refreshTokenHash, expiresAt],
     );
 
-    const userProfile = utils.buildUserProfile(
-      id,
-      first_name,
-      last_name,
-      email_address,
-      email_verified,
-      role,
-      created_at,
-      updated_at,
-    );
+    const userProfile = utils.buildUserProfile(userRows[0]);
 
     return {
       userProfile,
@@ -426,27 +431,9 @@ const session = async (userId) => {
       throw new Error("User not found");
     }
 
-    const {
-      id,
-      first_name,
-      last_name,
-      email_address,
-      email_verified,
-      role,
-      created_at,
-      updated_at,
-    } = rows[0];
+    const user = rows[0];
 
-    return utils.buildUserProfile(
-      id,
-      first_name,
-      last_name,
-      email_address,
-      email_verified,
-      role,
-      created_at,
-      updated_at,
-    );
+    return utils.buildUserProfile(user);
   } catch (error) {
     throw error;
   }

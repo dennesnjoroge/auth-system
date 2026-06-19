@@ -40,7 +40,7 @@ const login = async (req, res, next) => {
 
 const register = async (req, res, next) => {
   try {
-    await authService.register(req.body);
+    await authService.register(req.body, req);
 
     return res.status(201).json({
       status: "success",

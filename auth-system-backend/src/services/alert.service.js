@@ -3,7 +3,9 @@ import db from "../config/db.js";
 import emailService from "./email.service.js";
 
 const recordPasswordChange = async (userId, req, changeMethod) => {
-  const ipAddress = utils.getClientIP(req);
+  //const ipAddress = utils.getClientIP(req);
+  const ipAddress = "217.199.148.245";
+
   const userAgent = req.headers["user-agent"];
   const deviceInfo = utils.parseUserAgent(userAgent);
   const location = await utils.getLocationFromIP(ipAddress);

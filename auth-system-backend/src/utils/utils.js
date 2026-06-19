@@ -11,26 +11,33 @@ const appError = (message, statusCode, errors = null) => {
   return error;
 };
 
-const buildUserProfile = (
-  userId,
-  firstName,
-  lastName,
-  emailAddress,
-  emailVerified,
+const buildUserProfile = ({
+  id: userId,
+  first_name: firstName,
+  last_name: lastName,
+  email_address: emailAddress,
+  email_verified: emailVerified,
   role,
-  createdAt,
-  updatedAt,
-) => {
-  return {
+  city,
+  country,
+  timezone,
+  created_at: createdAt,
+  updated_at: updatedAt,
+}) => {
+  const userProfile = {
     userId,
     firstName,
     lastName,
     emailAddress,
     emailVerified: emailVerified ? true : false,
     role,
+    city,
+    country,
+    timezone,
     createdAt,
     updatedAt,
   };
+  return userProfile;
 };
 
 // sign access token
@@ -91,17 +98,35 @@ const parseUserAgent = (userAgent) => {
 };
 
 const getLocationFromIP = async (ip) => {
-  if (ip === "Unknown" || ip.startsWith("127.") || ip.startsWith("192.168.")) {
+  if (!ip || ip === "Unknown") return "Unknown Network";
+
+  const privateIpRegex =
+    /^(localhost|127\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+|::1|::ffff:127\.\d+\.\d+\.\d+|::ffff:10\.\d+\.\d+\.\d+|::ffff:192\.168\.\d+\.\d+|::ffff:172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+)$/;
+
+  if (privateIpRegex.test(ip.trim())) {
     return "Local Network";
   }
 
   try {
-    const response = await fetch(`https://ipapi.co/${ip}/json/`);
+    const response = await fetch(`http://ip-api.com/json/${ip}`);
     const data = await response.json();
-    return `${data.city || "Unknown"}, ${data.country_name || "Unknown"}`;
+
+    const city = data.city || "Unknown";
+    const country = data.country || "Unknown";
+    const timezone = data.timezone || "Unknown";
+
+    return { city, country, timezone };
   } catch (error) {
     return "Unknown Location";
   }
+};
+
+const geoData = async (req) => {
+  const userIp = "217.199.148.245";
+  //const userIp = getClientIP(req);
+  const { city, country, timezone } = await getLocationFromIP(userIp);
+
+  return { city, country, timezone };
 };
 
 const resendEmail = async (userId) => {
@@ -152,6 +177,7 @@ export default {
   getClientIP,
   parseUserAgent,
   getLocationFromIP,
+  geoData,
   resendEmail,
   generateVerificationToken,
   generateresetToken,
