@@ -104,7 +104,11 @@ const getLocationFromIP = async (ip) => {
     /^(localhost|127\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+|::1|::ffff:127\.\d+\.\d+\.\d+|::ffff:10\.\d+\.\d+\.\d+|::ffff:192\.168\.\d+\.\d+|::ffff:172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+)$/;
 
   if (privateIpRegex.test(ip.trim())) {
-    return "Local Network";
+    const city = "Unknown";
+    const country = "Unknown";
+    const timezone = "Unknown";
+
+    return { city, country, timezone };
   }
 
   try {
@@ -117,13 +121,16 @@ const getLocationFromIP = async (ip) => {
 
     return { city, country, timezone };
   } catch (error) {
-    return "Unknown Location";
+    const city = "Unknown";
+    const country = "Unknown";
+    const timezone = "Unknown";
+
+    return { city, country, timezone };
   }
 };
 
 const geoData = async (req) => {
-  const userIp = "217.199.148.245";
-  //const userIp = getClientIP(req);
+  const userIp = getClientIP(req);
   const { city, country, timezone } = await getLocationFromIP(userIp);
 
   return { city, country, timezone };
