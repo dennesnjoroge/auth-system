@@ -4,7 +4,6 @@ import db from "../config/db.js";
 import utils from "../utils/utils.js";
 import emailService from "./email.service.js";
 import alertService from "./alert.service.js";
-import { error } from "console";
 
 const login = async (emailAddress, password) => {
   try {
