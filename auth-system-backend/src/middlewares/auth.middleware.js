@@ -5,7 +5,7 @@ import utils from "../utils/utils.js";
 const auth = (req, res, next) => {
   try {
     // destructure access token
-    const { _at: authToken } = req.cookies;
+    const { _at: authToken, _rt: refreshToken } = req.cookies;
 
     if (!authToken) {
       return res.sendStatus(401);
@@ -14,7 +14,7 @@ const auth = (req, res, next) => {
     // decode auth token
     const decoded = jwt.verify(authToken, process.env.JWT_SECRET);
     const userId = decoded.sub;
-    req.user = { userId };
+    req.user = { userId, refreshToken };
     next();
   } catch (error) {
     next(error);

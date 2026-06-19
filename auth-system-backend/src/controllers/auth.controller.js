@@ -85,7 +85,17 @@ const verifyEmail = async (req, res, next) => {
 
 const logout = async (req, res, next) => {
   try {
+    const { refreshToken } = req.user;
+
+    await authService.logout(refreshToken);
+
     res.clearCookie("_at", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    });
+
+    res.clearCookie("_rt", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

@@ -267,6 +267,20 @@ const verifyEmail = async (verificationToken) => {
   }
 };
 
+const logout = async (refreshToken) => {
+  try {
+    // hash refresh token
+    const incomingHash = crypto.hash("sha256", refreshToken, "hex");
+
+    // lookup hash in db
+    await db.execute(`DELETE FROM refresh_tokens WHERE token_hash = ?`, [
+      incomingHash,
+    ]);
+  } catch (error) {
+    throw error;
+  }
+};
+
 const forgotPassword = async (emailAddress) => {
   try {
     // check user
@@ -504,6 +518,7 @@ export default {
   login,
   register,
   verifyEmail,
+  logout,
   forgotPassword,
   resetPassword,
   changePassword,

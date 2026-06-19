@@ -23,7 +23,7 @@ router.post(
   validationMiddleware.verifyEmail(validationSchema.verifyEmail),
   authController.verifyEmail,
 );
-router.post("/logout", authController.logout);
+router.post("/logout", authMiddleware.auth, authController.logout);
 router.post(
   "/forgot-password",
   validationMiddleware.forgotPassword(validationSchema.forgotPassword),
