@@ -2,10 +2,12 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import db from "../config/db.js";
 import utils from "../utils/utils.js";
+import logger from "../utils/logger.js";
 import emailService from "./email.service.js";
 import alertService from "./alert.service.js";
+import auditEvents from "../constants/auditEvents.js";
 
-const login = async (emailAddress, password) => {
+const login = async (emailAddress, password, req) => {
   try {
     const [rows] = await db.execute(
       "SELECT * FROM users WHERE email_address = ?",
@@ -13,6 +15,15 @@ const login = async (emailAddress, password) => {
     );
 
     if (rows.length === 0) {
+      logger.triggerSecurityLog(
+        auditEvents.AUDIT_EVENTS.AUTH_LOGIN_FAILED,
+        "FAILURE",
+        req,
+        {
+          email: emailAddress,
+          reason: auditEvents.AUDIT_REASONS.AUTH.EMAIL_NOT_FOUND,
+        },
+      );
       throw utils.appError("Incorrect email or password", 401);
     }
 

@@ -12,6 +12,7 @@ const login = async (req, res, next) => {
     const { userProfile, accessToken, refreshToken } = await authService.login(
       emailAddress,
       password,
+      req,
     );
 
     res.cookie("_at", accessToken, {
