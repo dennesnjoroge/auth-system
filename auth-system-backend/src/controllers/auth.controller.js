@@ -88,7 +88,7 @@ const logout = async (req, res, next) => {
   try {
     const { refreshToken } = req.user;
 
-    await authService.logout(refreshToken);
+    await authService.logout(refreshToken, req);
 
     res.clearCookie("_at", {
       httpOnly: true,
@@ -115,7 +115,7 @@ const forgotPassword = async (req, res, next) => {
   try {
     const { emailAddress } = req?.body;
 
-    await authService.forgotPassword(emailAddress);
+    await authService.forgotPassword(emailAddress, req);
 
     return res.status(200).json({
       message:

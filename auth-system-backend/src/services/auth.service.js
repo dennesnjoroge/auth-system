@@ -17,10 +17,10 @@ const login = async (emailAddress, password, req) => {
     if (rows.length === 0) {
       logger.triggerSecurityLog(
         auditEvents.AUDIT_EVENTS.AUTH_LOGIN_FAILED,
-        "FAILURE",
+        "FAILED",
         req,
         {
-          email: emailAddress,
+          emailAddress,
           reason: auditEvents.AUDIT_REASONS.AUTH.EMAIL_NOT_FOUND,
         },
       );
@@ -44,6 +44,15 @@ const login = async (emailAddress, password, req) => {
     const comparePassword = await bcrypt.compare(password, user.password_hash);
 
     if (!comparePassword) {
+      logger.triggerSecurityLog(
+        auditEvents.AUDIT_EVENTS.AUTH_LOGIN_FAILED,
+        "FAILED",
+        req,
+        {
+          emailAddress,
+          reason: auditEvents.AUDIT_REASONS.AUTH.INVALID_PASSWORD,
+        },
+      );
       throw utils.appError("Incorrect email or password", 401);
     }
 
@@ -55,6 +64,16 @@ const login = async (emailAddress, password, req) => {
     const token = tokenRows[0];
 
     if (user.email_verified === 0) {
+      logger.triggerSecurityLog(
+        auditEvents.AUDIT_EVENTS.AUTH_LOGIN_FAILED,
+        "FAILED",
+        req,
+        {
+          emailAddress: emailAddress,
+          reason: auditEvents.AUDIT_REASONS.AUTH.EMAIL_NOT_VERIFIED,
+        },
+      );
+
       if (token?.expires_at) {
         if (new Date(token.expires_at).getTime() > Date.now()) {
           throw utils.appError(
@@ -76,6 +95,12 @@ const login = async (emailAddress, password, req) => {
         403,
       );
     }
+
+    logger.triggerSecurityLog(
+      auditEvents.AUDIT_EVENTS.AUTH_LOGIN_SUCCESS,
+      "SUCCESS",
+      req,
+    );
 
     const { accessToken } = utils.signAccessToken(id);
     const { refreshToken } = utils.signRefreshToken(id);
@@ -118,6 +143,15 @@ const register = async (
     );
 
     if (rows.length > 0) {
+      logger.triggerSecurityLog(
+        auditEvents.AUDIT_EVENTS.AUTH_REGISTRATION_FAILED,
+        "FAILED",
+        req,
+        {
+          email: emailAddress,
+          reason: auditEvents.AUDIT_REASONS.AUTH.EMAIL_CONFLICT,
+        },
+      );
       throw utils.appError(
         "An account with that email address already exists",
         409,
@@ -273,7 +307,7 @@ const verifyEmail = async (verificationToken) => {
   }
 };
 
-const logout = async (refreshToken) => {
+const logout = async (refreshToken, req) => {
   try {
     // hash refresh token
     const incomingHash = crypto.hash("sha256", refreshToken, "hex");
@@ -282,12 +316,19 @@ const logout = async (refreshToken) => {
     await db.execute(`DELETE FROM refresh_tokens WHERE token_hash = ?`, [
       incomingHash,
     ]);
+
+    logger.triggerSecurityLog(
+      auditEvents.AUDIT_EVENTS.AUTH_LOGOUT,
+      "SUCCESS",
+      req,
+      {},
+    );
   } catch (error) {
     throw error;
   }
 };
 
-const forgotPassword = async (emailAddress) => {
+const forgotPassword = async (emailAddress, req) => {
   try {
     // check user
     const [rows] = await db.execute(
@@ -297,6 +338,15 @@ const forgotPassword = async (emailAddress) => {
 
     // return silently
     if (rows.length === 0) {
+      logger.triggerSecurityLog(
+        auditEvents.AUDIT_EVENTS.AUTH_PASSWORD_RESET,
+        "FAILED",
+        req,
+        {
+          email: emailAddress,
+          reason: auditEvents.AUDIT_REASONS.AUTH.EMAIL_NOT_FOUND,
+        },
+      );
       return;
     }
 
@@ -338,6 +388,15 @@ const resetPassword = async (resetToken, password, req) => {
     );
 
     if (tokenRows.length === 0) {
+      logger.triggerSecurityLog(
+        auditEvents.AUDIT_EVENTS.AUTH_PASSWORD_RESET,
+        "FAILED",
+        req,
+        {
+          token: resetToken,
+          reason: auditEvents.AUDIT_REASONS.AUTH.TOKEN_EXPIRED,
+        },
+      );
       throw utils.appError("Invalid or expired reset token", 400);
     }
 
@@ -354,6 +413,15 @@ const resetPassword = async (resetToken, password, req) => {
     );
 
     if (userRows.length === 0) {
+      logger.triggerSecurityLog(
+        auditEvents.AUDIT_EVENTS.AUTH_PASSWORD_RESET,
+        "FAILED",
+        req,
+        {
+          userId: user_id,
+          reason: auditEvents.AUDIT_REASONS.AUTH.USER_NOT_FOUND,
+        },
+      );
       const error = new Error("User not found");
       error.statusCode = 500;
 

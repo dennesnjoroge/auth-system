@@ -1,4 +1,5 @@
 import winston from "winston";
+import "winston-daily-rotate-file";
 import utils from "./utils.js";
 
 /*
@@ -17,7 +18,27 @@ const logger = winston.createLogger({
   format: winston.format.json(),
   transports: [
     //new winston.transports.Console(),
-    new winston.transports.File({ filename: "logs/security.log" }),
+    new winston.transports.DailyRotateFile({
+      filename: "logs/security-%DATE%.log",
+      datePattern: "YYYY-MM-DD",
+      maxSize: "20m",
+      maxFiles: "30d",
+      zippedArchive: true,
+
+      format: winston.format.combine(
+        winston.format((info) => (info.level === "info" ? info : false))(),
+        winston.format.json(),
+      ),
+    }),
+
+    new winston.transports.DailyRotateFile({
+      filename: "logs/error-%DATE%.log",
+      datePattern: "YYYY-MM-DD",
+      level: "error",
+      maxSize: "50m",
+      maxFiles: "90d",
+      zippedArchive: true,
+    }),
   ],
 });
 
@@ -25,7 +46,7 @@ const triggerSecurityLog = (eventId, status, req, details = {}) => {
   const ip = utils.getClientIP(req);
 
   logger.info({
-    timestamp: winston.format.timestamp(),
+    timestamp: new Date().toISOString(),
     event_id: eventId,
     status: status,
     ip_address: ip,
@@ -34,4 +55,18 @@ const triggerSecurityLog = (eventId, status, req, details = {}) => {
   });
 };
 
-export default { triggerSecurityLog };
+const triggerSystemErrorLog = (message, error, req) => {
+  const ip = utils.getClientIP(req);
+
+  logger.error({
+    message: message,
+    error_name: error?.name,
+    error_message: error?.message,
+    stack: error?.stack, // This is now safe and guaranteed to print
+    ip_address: ip,
+    url: req?.originalUrl,
+    method: req?.method,
+  });
+};
+
+export default { triggerSecurityLog, triggerSystemErrorLog };

@@ -9,6 +9,7 @@ import db from "./src/config/db.js";
 import corsRouter from "./src/config/cors.js";
 import indexRoutes from "./src/routes/index.js";
 import { json } from "stream/consumers";
+import logger from "./src/utils/logger.js";
 
 const app = express();
 
@@ -63,7 +64,11 @@ app.use((error, req, res, next) => {
     });
   }
 
-  console.error("CRITICAL SYSTEM ERROR:", error);
+  logger.triggerSystemErrorLog(error.message, error, req);
+
+  if (process.env.NODE_ENV === "development") {
+    console.error(error);
+  }
 
   return res.status(500).json({
     status: "error",
