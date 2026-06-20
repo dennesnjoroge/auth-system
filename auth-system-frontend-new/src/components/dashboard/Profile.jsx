@@ -1,15 +1,24 @@
+import { useAuth } from "../../hooks/useAuth";
+
 function Profile() {
-  const user = {
-    id: 1,
-    firstname: "John",
-    lastname: "Doe",
-    email: "john@example.com",
-    role: "User",
-    verified: true,
-    joined: "June, 10",
-    country: "Kenya",
-    timeZone: "Africa/Kenya",
-  };
+  const { profile, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex w-full h-screen items-center justify-center bg-white text-black text-xl font-medium">
+        Loading profile...
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="flex w-full h-screen items-center justify-center bg-white text-red-600 text-xl font-medium">
+        Unable to load profile information. Please log in again.
+      </div>
+    );
+  }
+
   return (
     <div className="flex w-full  bg-white border-gray-100">
       <div className="flex-1 p-6">
@@ -17,44 +26,27 @@ function Profile() {
 
         <div className="border px-6 py-6 border-gray-200 rounded-lg">
           <div className="text-lg text-black">
-            <div className="flex items-center justify-between mb-4">
+            <div className="mb-4">
               <h2 className="text-2xl font-medium text-black">
                 Personal information
               </h2>
-
-              <button className="rounded-3xl bg-gray-100 px-2 py-2 text-black cursor-pointer">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                  className="size-6"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
-                  />
-                </svg>
-              </button>
             </div>
 
             <div className="text-gray-600">
               <span className="font-semibold text-black block">Firstname</span>{" "}
-              {user.firstname}
+              {profile.firstName}
             </div>
 
             <div className="text-gray-600">
               <span className="font-semibold text-black block">Lastname</span>
-              {user.lastname}
+              {profile.lastName}
             </div>
 
             <div className="text-gray-600">
               <span className="font-semibold text-black block">
                 Email address
               </span>
-              {user.email}
+              {profile.emailAddress}
             </div>
           </div>
         </div>
@@ -78,16 +70,16 @@ function Profile() {
           </svg>
 
           <div className="flex items-center text-3xl font-bold gap-0.5 text-black">
-            <span>{`${user.firstname} ${user.lastname}`}</span>
+            <span>{`${profile.firstName} ${profile.lastName}`}</span>
             <span>
-              {user.verified ? (
+              {profile.emailVerified ? (
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
                   strokeWidth={1.5}
                   stroke="currentColor"
-                  className="size-6"
+                  className="w-6 h-6 text-green-600"
                 >
                   <path
                     strokeLinecap="round"
@@ -102,12 +94,12 @@ function Profile() {
                   viewBox="0 0 24 24"
                   strokeWidth={1.5}
                   stroke="currentColor"
-                  className="size-6"
+                  className="w-6 h-6 text-red-600"
                 >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z"
+                    d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"
                   />
                 </svg>
               )}
@@ -116,7 +108,7 @@ function Profile() {
         </div>
 
         <div className="mb-4">
-          <span className="text-gray-600">{user.email}</span>
+          <span className="text-gray-600">{profile.emailAddress}</span>
         </div>
 
         <div className="flex text-black mb-2 items-center gap-0.5">
@@ -140,7 +132,7 @@ function Profile() {
             />
           </svg>
 
-          <span className="">{user.country}</span>
+          <span className="">{profile.country}</span>
         </div>
 
         <div className="flex items-center gap-0.5 text-black mb-2">
@@ -159,7 +151,7 @@ function Profile() {
             />
           </svg>
 
-          <span className="">{user.timeZone}</span>
+          <span className="">{profile.timezone}</span>
         </div>
       </div>
     </div>

@@ -5,7 +5,7 @@ function Aside() {
     { name: "Overview", path: "/dashboard" },
     { name: "Profile", path: "/dashboard/profile" },
     { name: "Security", path: "/dashboard/security" },
-    { name: "Sessions", path: "/dashboard/sessions" },
+    { name: "Settings", path: "/dashboard/sessions" },
   ];
 
   return (

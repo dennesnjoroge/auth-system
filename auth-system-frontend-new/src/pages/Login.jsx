@@ -1,9 +1,11 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import api from "../api/axios";
+import { useAuth } from "../hooks/useAuth";
 import { toast } from "react-toastify";
 
 function Login() {
+  const { login } = useAuth();
   const [emailAddress, setEmailAddress] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({});
@@ -21,6 +23,7 @@ function Login() {
         password,
       });
       toast.success(response?.data?.message || "Login was successful");
+      login(response.data.payload);
       navigate("/dashboard", { replace: true });
     } catch (error) {
       if (error.response) {

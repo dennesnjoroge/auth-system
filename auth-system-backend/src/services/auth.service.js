@@ -79,16 +79,7 @@ const login = async (emailAddress, password) => {
       [id, refreshTokenHash, expiresAt],
     );
 
-    const userProfile = utils.buildUserProfile(
-      id,
-      first_name,
-      last_name,
-      email_address,
-      email_verified,
-      role,
-      created_at,
-      updated_at,
-    );
+    const userProfile = utils.buildUserProfile(rows[0]);
 
     return {
       userProfile,
