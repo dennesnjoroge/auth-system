@@ -4,8 +4,7 @@ function Aside() {
   const navItems = [
     { name: "Overview", path: "/dashboard" },
     { name: "Profile", path: "/dashboard/profile" },
-    { name: "Security", path: "/dashboard/security" },
-    { name: "Settings", path: "/dashboard/sessions" },
+    { name: "Settings", path: "/dashboard/settings" },
   ];
 
   return (

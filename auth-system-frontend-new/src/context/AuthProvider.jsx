@@ -5,6 +5,7 @@ import api from "../api/axios";
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,13 +27,19 @@ export function AuthProvider({ children }) {
         }
         setSession(null);
       } finally {
-        setLoading(false);
+        //setLoading(false);
       }
     }
     checkAuthStatus();
   }, []);
 
   useEffect(() => {
+    if (!session) {
+      setProfile(null);
+      setLoading(false);
+      return;
+    }
+
     async function fetchProfile() {
       try {
         const response = await api.get("/api/v1/users/profile");
@@ -56,7 +63,39 @@ export function AuthProvider({ children }) {
     }
 
     fetchProfile();
-  }, []);
+  }, [session]);
+
+  useEffect(() => {
+    if (!session) {
+      setSettings(null);
+      setLoading(false);
+      return;
+    }
+
+    async function fetchPasswordChangeHistory() {
+      try {
+        const response = await api.get("/api/v1/users/settings");
+        setSettings(response.data.payload);
+      } catch (error) {
+        if (error.response) {
+          if (error.response.status === 401) {
+            setSettings(null);
+          }
+        } else if (error.request) {
+          console.error(
+            "Network error. Please check your internet connection.",
+          );
+        } else {
+          console.error("An unexpected error occurred.");
+        }
+        setProfile(null);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchPasswordChangeHistory();
+  }, [session]);
 
   /*
   useEffect(() => {
@@ -101,18 +140,37 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
-    try {
-      await api.post("/api/v1/auth/logout"); // Backend clears the cookie
-    } catch (error) {
-      console.error("Logout failed", error);
-    } finally {
-      setSession(null);
-    }
+    setSession(null);
   };
 
   return (
-    <AuthContext.Provider value={{ session, profile, login, logout, loading }}>
+    <AuthContext.Provider
+      value={{
+        session,
+        profile,
+        settings,
+        login,
+        logout,
+        loading,
+        isAuthenticated: !!session,
+      }}
+    >
       {!loading && children}
     </AuthContext.Provider>
   );
+}
+
+{
+  /**<AuthContext.Provider 
+      value={{ 
+        user, 
+        session, 
+        loading, 
+        isAuthenticated: !!session && !!user, // Quick boolean check
+        logout,
+        refreshAuth: initializeAuth 
+      }}
+    >
+      {children}
+    </AuthContext.Provider> */
 }

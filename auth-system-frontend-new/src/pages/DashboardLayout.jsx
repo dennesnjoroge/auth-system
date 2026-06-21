@@ -1,14 +1,20 @@
 import { Outlet } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth";
 import Aside from "../components/dashboard/Aside";
-function DashboardLayout() {
-  const { user } = useAuth();
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
+import api from "../api/axios";
+import { toast } from "react-toastify";
 
-  const handleLogout = () => {
+function DashboardLayout() {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
     try {
-      console.log(user);
-      console.log("Logout");
-      //navigate("/login", { replace: true });
+      const response = await api.post("/api/v1/auth/logout");
+      toast.success(response?.data?.message || "Logout was successful");
+      logout();
+      navigate("/login", { replace: true });
     } catch (error) {
       console.error(error);
     }

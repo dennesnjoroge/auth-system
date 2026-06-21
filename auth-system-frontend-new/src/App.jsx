@@ -1,5 +1,6 @@
 import { AuthProvider } from "./context/AuthProvider";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { ProtectedRoutes } from "./components/dashboard/ProtectedRoutes";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Home from "./pages/Home";
@@ -11,7 +12,6 @@ import ResetPassword from "./pages/ResetPassword";
 import DashboardLayout from "./pages/DashboardLayout";
 import Overview from "./components/dashboard/Overview";
 import Profile from "./components/dashboard/Profile";
-import Security from "./components/dashboard/Security";
 import Settings from "./components/dashboard/Settings";
 
 function App() {
@@ -29,11 +29,12 @@ function App() {
             <Route path="/verify" element={<VerifyEmail />} />
 
             {/**Protected */}
-            <Route path="/dashboard" element={<DashboardLayout />}>
-              <Route index element={<Overview />} />
-              <Route path="profile" element={<Profile />} />
-              <Route path="security" element={<Security />} />
-              <Route path="sessions" element={<Settings />} />
+            <Route element={<ProtectedRoutes />}>
+              <Route path="/dashboard" element={<DashboardLayout />}>
+                <Route index element={<Overview />} />
+                <Route path="profile" element={<Profile />} />
+                <Route path="settings" element={<Settings />} />
+              </Route>
             </Route>
           </Routes>
         </AuthProvider>
