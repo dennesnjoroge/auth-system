@@ -9,6 +9,7 @@ import userController from "../controllers/user.controller.js";
 const router = express.Router();
 
 router.get("/profile", authMiddleware.auth, userController.profile);
+router.get("/settings", authMiddleware.auth, userController.settings);
 
 router.get("/dashboard", auth, async (req, res) => {
   try {

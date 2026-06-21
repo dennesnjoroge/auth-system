@@ -197,7 +197,12 @@ const register = async (
       verificationToken,
     );
 
-    return;
+    logger.triggerSecurityLog(
+      auditEvents.AUDIT_EVENTS.AUTH_REGISTRATION_SUCCESS,
+      "SUCCESS",
+      req,
+      { userId },
+    );
   } catch (error) {
     await connection.rollback();
     throw error;
@@ -321,7 +326,6 @@ const logout = async (refreshToken, req) => {
       auditEvents.AUDIT_EVENTS.AUTH_LOGOUT,
       "SUCCESS",
       req,
-      {},
     );
   } catch (error) {
     throw error;
@@ -339,7 +343,7 @@ const forgotPassword = async (emailAddress, req) => {
     // return silently
     if (rows.length === 0) {
       logger.triggerSecurityLog(
-        auditEvents.AUDIT_EVENTS.AUTH_PASSWORD_RESET,
+        auditEvents.AUDIT_EVENTS.AUTH_FORGOT_PASSWORD_SEND_LINK,
         "FAILED",
         req,
         {
@@ -367,6 +371,13 @@ const forgotPassword = async (emailAddress, req) => {
       `${first_name} ${last_name}`,
       emailAddress,
       resetToken,
+    );
+
+    logger.triggerSecurityLog(
+      auditEvents.AUDIT_EVENTS.AUTH_FORGOT_PASSWORD_SEND_LINK,
+      "SUCCESS",
+      req,
+      { emailAddress },
     );
   } catch (error) {
     throw error;
@@ -444,6 +455,13 @@ const resetPassword = async (resetToken, password, req) => {
 
     await connection.commit();
     alertService.recordPasswordChange(user_id, req);
+
+    logger.triggerSecurityLog(
+      auditEvents.AUDIT_EVENTS.AUTH_PASSWORD_RESET,
+      "SUCCESS",
+      req,
+      { user_id },
+    );
   } catch (error) {
     await connection.rollback();
     throw error;

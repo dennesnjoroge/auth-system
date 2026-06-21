@@ -14,4 +14,19 @@ const profile = async (req, res, next) => {
   }
 };
 
-export default { profile };
+const settings = async (req, res, next) => {
+  try {
+    const { userId } = req.user;
+
+    const history = await userService.settings(userId);
+
+    res.status(200).json({
+      status: "success",
+      payload: history,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export default { profile, settings };

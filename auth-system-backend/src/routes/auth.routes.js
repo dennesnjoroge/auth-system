@@ -37,6 +37,5 @@ router.post(
 router.post("/change-password", auth, authController.changePassword);
 router.get("/session", authMiddleware.auth, authController.session);
 router.post("/refresh", authMiddleware.refresh, authController.refresh);
-//router.get("/me", checkAuthToken);
 
 export default router;

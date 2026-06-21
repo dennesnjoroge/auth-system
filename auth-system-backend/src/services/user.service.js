@@ -19,4 +19,13 @@ const profile = async (userId) => {
   }
 };
 
-export default { profile };
+const settings = async (userId) => {
+  const [rows] = await db.execute(
+    `SELECT changed_at FROM password_change_history WHERE user_id = ? ORDER BY changed_at DESC LIMIT 1`,
+    [userId],
+  );
+
+  return rows[0];
+};
+
+export default { profile, settings };
