@@ -14,6 +14,7 @@ function DashboardLayout() {
       const response = await api.post("/api/v1/auth/logout");
       toast.success(response?.data?.message || "Logout was successful");
       logout();
+      window.location.reload();
       navigate("/login", { replace: true });
     } catch (error) {
       console.error(error);
