@@ -1,15 +1,82 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import { toast } from "react-toastify";
+import api from "../../api/axios";
 function Security() {
   const [isPasswordOpen, setIsPasswordOpen] = useState(false);
   const [password, setPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
-  const [errors, setErrors] = useState(null);
   const [loading, setLoading] = useState(false);
   const { settings } = useAuth();
   const changedAt = settings?.changed_at;
+  const navigate = useNavigate();
 
-  function handlePasswordChange() {}
+  async function handlePasswordChange(e) {
+    e.preventDefault();
+
+    if (password !== repeatPassword) {
+      toast.error("Passwords do not match");
+      setPassword("");
+      setRepeatPassword("");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await api.post("/api/v1/auth/change-password", {
+        password,
+      });
+
+      toast.success(response?.data.message || "Password updated successfully");
+      setPassword("");
+      setRepeatPassword("");
+
+      window.location.reload();
+    } catch (error) {
+      if (error.response) {
+        toast.error(
+          error?.response?.data?.message ||
+            "Something went wrong please try again.",
+        );
+      } else if (error.request) {
+        toast.error("Network error. Please check your internet connection.");
+      } else {
+        toast.error("An unexpected error occurred.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDelete() {
+    const userInput = window.prompt(
+      "Type 'DELETE' to confirm you want to close your account.",
+    );
+
+    if (userInput === "DELETE") {
+      try {
+        await api.post("/api/v1/users/delete");
+        toast.success("Account deleted successfully.");
+
+        navigate("/login", { replace: true });
+      } catch (error) {
+        if (error.response) {
+          toast.error(
+            error?.response?.data?.message ||
+              "Something went wrong please try again.",
+          );
+        } else if (error.request) {
+          toast.error("Network error. Please check your internet connection.");
+        } else {
+          toast.error("An unexpected error occurred.");
+        }
+      }
+    } else if (userInput !== null) {
+      toast.error("Incorrect word. Account was not deleted.");
+    }
+  }
 
   return (
     <div className="relative w-full p-6 bg-white border-gray-100">
@@ -94,7 +161,7 @@ function Security() {
 
                 <input
                   type="password"
-                  placeholder="Password"
+                  placeholder="Confirm Password"
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-black"
                   value={repeatPassword}
                   onChange={(e) => setRepeatPassword(e.target.value)}
@@ -107,7 +174,7 @@ function Security() {
                 className="w-full bg-black text-white px-3 py-2 rounded-lg font-medium hover:opacity-90 transition cursor-pointer disabled:cursor-not-allowed"
                 disabled={loading}
               >
-                {loading ? "Changing..." : "Change"}
+                {loading ? "Changing..." : "Change password"}
               </button>
             </form>
           </div>
@@ -118,7 +185,10 @@ function Security() {
         <div className="text-lg text-black">
           <h2 className="text-red-600 font-bold">Danger Zone</h2>
 
-          <button className="bg-red-600 mt-6 text-white px-3 py-2 rounded-sm cursor-pointer">
+          <button
+            onClick={handleDelete}
+            className="bg-red-600 mt-6 text-white px-3 py-2 rounded-sm cursor-pointer"
+          >
             Delete Account
           </button>
         </div>
