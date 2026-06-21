@@ -142,10 +142,10 @@ const resetPassword = async (req, res, next) => {
 
 const changePassword = async (req, res, next) => {
   try {
-    const { currentPassword, newPassword } = req?.body || {};
-    const userId = req.user.id;
+    const { userId } = req.user;
+    const { password } = req.body;
 
-    await authService.changePassword(currentPassword, newPassword, userId);
+    await authService.changePassword(userId, password, req);
 
     return res
       .status(200)

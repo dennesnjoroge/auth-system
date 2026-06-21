@@ -54,4 +54,17 @@ const resetPassword = z.object({
     .min(8, { error: "Password must be at least 8 characters" }),
 });
 
-export default { register, login, verifyEmail, forgotPassword, resetPassword };
+const changePassword = z.object({
+  password: z
+    .string({ error: "Password is required" })
+    .min(8, { error: "Password must be at least 8 characters" }),
+});
+
+export default {
+  register,
+  login,
+  verifyEmail,
+  forgotPassword,
+  resetPassword,
+  changePassword,
+};

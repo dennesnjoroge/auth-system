@@ -470,41 +470,38 @@ const resetPassword = async (resetToken, password, req) => {
   }
 };
 
-const changePassword = async (currentPassword, newPassword, userId) => {
+const changePassword = async (userId, password, req) => {
+  const connection = await db.getConnection();
   try {
-    const [rows] = await db.execute(
-      `SELECT password_hash FROM users WHERE id = ?`,
-      [userId],
+    await connection.beginTransaction();
+    // hash password
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // insert new password in db
+    await connection.execute(
+      `UPDATE users SET password_hash = ? WHERE id = ?`,
+      [passwordHash, userId],
     );
 
-    const user = rows[0];
+    // record password change
+    const ipAddress = utils.getClientIP(req);
+    const userAgent = req.headers["user-agent"];
+    const deviceInfo = utils.parseUserAgent(userAgent);
+    const { city, country } = await utils.getLocationFromIP(ipAddress);
 
-    const comparePassword = await bcrypt.compare(
-      currentPassword,
-      user.password_hash,
+    await connection.execute(
+      `INSERT INTO password_change_history 
+       (user_id, ip_address, city, country, user_agent, device_info)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [userId, ipAddress, city, country, userAgent, deviceInfo],
     );
 
-    if (!comparePassword) {
-      throw utils.appError("Wrong password", 400);
-    }
-
-    const passwordHash = await bcrypt.hash(newPassword, saltRounds);
-
-    await db.execute(`UPDATE users SET password_hash = ? WHERE id = ?`, [
-      passwordHash,
-      userId,
-    ]);
-
-    const changeMethod = "Manual";
-
-    alertService.recordPasswordChange({ userId, req, changeMethod });
+    await connection.commit();
   } catch (error) {
-    if (error.isAppError) {
-      throw error;
-    }
-
-    console.error("Change Password Service Critical Error: ", error.message);
-    throw utils.appError("Internal Server Error", 500);
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
   }
 };
 

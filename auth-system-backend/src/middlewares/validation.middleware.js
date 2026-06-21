@@ -111,4 +111,33 @@ const resetPassword = (resetPasswordSchema) => {
   };
 };
 
-export default { login, register, verifyEmail, forgotPassword, resetPassword };
+const changePassword = (changePasswordSchema) => {
+  return (req, res, next) => {
+    try {
+      const validData = changePasswordSchema.parse(req.body);
+      req.body = validData;
+      next();
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const errors = error.issues.reduce((acc, issue) => {
+          const field = issue.path.join(".");
+          acc[field] = issue.message;
+          return acc;
+        }, {});
+
+        return next(utils.appError("Validation failed", 400, errors));
+      }
+
+      next(error);
+    }
+  };
+};
+
+export default {
+  login,
+  register,
+  verifyEmail,
+  forgotPassword,
+  resetPassword,
+  changePassword,
+};

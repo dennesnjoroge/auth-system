@@ -34,7 +34,12 @@ router.post(
   validationMiddleware.resetPassword(validationSchema.resetPassword),
   authController.resetPassword,
 );
-router.post("/change-password", auth, authController.changePassword);
+router.post(
+  "/change-password",
+  validationMiddleware.changePassword(validationSchema.changePassword),
+  authMiddleware.auth,
+  authController.changePassword,
+);
 router.get("/session", authMiddleware.auth, authController.session);
 router.post("/refresh", authMiddleware.refresh, authController.refresh);
 
