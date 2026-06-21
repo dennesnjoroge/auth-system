@@ -1,5 +1,6 @@
 import db from "../config/db.js";
 import utils from "../utils/utils.js";
+import emailService from "./email.service.js";
 
 const profile = async (userId) => {
   try {
@@ -28,4 +29,37 @@ const settings = async (userId) => {
   return rows[0];
 };
 
-export default { profile, settings };
+const deleteAccount = async (userId, req) => {
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const [rows] = await connection.execute(
+      `SELECT first_name, last_name, email_address FROM users WHERE id = ?`,
+      [userId],
+    );
+
+    const { first_name, last_name, email_address } = rows[0];
+
+    await connection.execute(
+      `INSERT INTO archive (first_name, last_name, email_address, ip) VALUES (?, ?, ?, ?)`,
+      [first_name, last_name, email_address, utils.getClientIP(req)],
+    );
+
+    //await connection.execute(`DELETE FROM users WHERE id = ?`, [userId]);
+
+    await connection.commit();
+
+    emailService.deleteAccountEmail(
+      `${first_name} ${last_name}`,
+      email_address,
+    );
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+};
+
+export default { profile, settings, deleteAccount };

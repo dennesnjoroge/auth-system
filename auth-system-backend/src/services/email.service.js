@@ -3,13 +3,6 @@ import emailTemplates from "../templates/email.templates.js";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-import {
-  accountDeletedTemplate,
-  onboardingTemplate,
-  passwordChangeTemplate,
-  resetCodeTemplate,
-} from "./templates/email.js";
-
 const BASE_URL =
   process.env.NODE_ENV === "production"
     ? process.env.FRONTEND_URL
@@ -87,7 +80,7 @@ const passwordAlert = async (
 
 const deleteAccountEmail = async (name, email) => {
   try {
-    const html = accountDeletedTemplate(name, email);
+    const html = emailTemplates.accountDelete(name, email);
 
     await resend.emails.send({
       from: `"Support Authentication System" <onboarding@resend.dev>`,
@@ -96,10 +89,7 @@ const deleteAccountEmail = async (name, email) => {
       html,
     });
   } catch (error) {
-    console.error(
-      "Critical Account Deletion email notification service error: ",
-      error.message,
-    );
+    throw error;
   }
 };
 
