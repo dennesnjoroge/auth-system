@@ -58,7 +58,7 @@ const verifyEmail = async (req, res, next) => {
     const { verificationToken } = req.body;
 
     const { userProfile, accessToken, refreshToken } =
-      await authService.verifyEmail(verificationToken);
+      await authService.verifyEmail(verificationToken, req);
 
     res.cookie("_at", accessToken, {
       httpOnly: true,

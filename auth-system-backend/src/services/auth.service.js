@@ -211,7 +211,7 @@ const register = async (
   }
 };
 
-const verifyEmail = async (verificationToken) => {
+const verifyEmail = async (verificationToken, req) => {
   // get mysql transaction
   const connection = await db.getConnection();
   try {
@@ -227,6 +227,12 @@ const verifyEmail = async (verificationToken) => {
     );
 
     if (rows.length === 0) {
+      logger.triggerSecurityLog(
+        auditEvents.AUDIT_EVENTS.USER_EMAIL_VERIFY,
+        "FAILED",
+        req,
+        { reason: "Expired token" },
+      );
       throw utils.appError("Invalid or expired verification token", 400);
     }
 
@@ -297,6 +303,12 @@ const verifyEmail = async (verificationToken) => {
     );
 
     const userProfile = utils.buildUserProfile(userRows[0]);
+
+    logger.triggerSecurityLog(
+      auditEvents.AUDIT_EVENTS.USER_EMAIL_VERIFY,
+      "SUCCESS",
+      req,
+    );
 
     return {
       userProfile,
@@ -497,6 +509,12 @@ const changePassword = async (userId, password, req) => {
     );
 
     await connection.commit();
+
+    logger.triggerSecurityLog(
+      auditEvents.AUDIT_EVENTS.AUTH_PASSWORD_CHANGE,
+      "SUCCESS",
+      req,
+    );
   } catch (error) {
     await connection.rollback();
     throw error;

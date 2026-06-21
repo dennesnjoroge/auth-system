@@ -1,15 +1,4 @@
 const AUDIT_EVENTS = {
-  /*
-EVT_AUTH_LOGIN_SUCCESS: Correct credentials entered.
-EVT_AUTH_LOGIN_FAILURE: Wrong password or email.
-EVT_AUTH_LOGOUT: Active session destroyed by user.
-EVT_AUTH_TOKEN_REFRESH: System extended session using refresh token.
-EVT_AUTH_PASSWORD_RESET_REQUEST: User requested a reset link.
-EVT_AUTH_PASSWORD_CHANGED: Password successfully updated.
-EVT_AUTH_ACCOUNT_LOCKED: Too many failed attempts triggered a lock
-*/
-
-  // Authentication Domain (1000 - 1999)
   AUTH_LOGIN_SUCCESS: "AUTH_1001",
   AUTH_LOGIN_FAILED: "AUTH_1002",
   AUTH_LOGOUT: "AUTH_1003",
@@ -17,14 +6,10 @@ EVT_AUTH_ACCOUNT_LOCKED: Too many failed attempts triggered a lock
   AUTH_REGISTRATION_FAILED: "AUTH_1005",
   AUTH_FORGOT_PASSWORD_SEND_LINK: "AUTH_1006",
   AUTH_REGISTRATION_SUCCESS: "AUTH_1007",
+  AUTH_PASSWORD_CHANGE: "AUTH_1008",
 
-  // User Management Domain (2000 - 2999)
-  USER_PROFILE_UPDATE: "USER_2001",
   USER_EMAIL_VERIFY: "USER_2002",
-
-  // Security / System Domain (3000 - 3999)
-  SEC_XSS_ATTEMPT: "SEC_3001",
-  SEC_RATE_LIMIT: "SEC_3002",
+  USER_ACCOUNT_DELETION: "USER_2003",
 };
 
 const AUDIT_REASONS = {

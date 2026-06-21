@@ -34,7 +34,6 @@ const deleteAccount = async (req, res, next) => {
     const { userId } = req.user;
     await userService.deleteAccount(userId, req);
 
-    /*
     res.clearCookie("_at", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -46,7 +45,6 @@ const deleteAccount = async (req, res, next) => {
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
     });
-    */
 
     res.status(200).json({
       status: "success",
