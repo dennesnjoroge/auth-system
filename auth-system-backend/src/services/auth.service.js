@@ -167,9 +167,12 @@ const register = async (
     // get user geo-data(ip, location, timezone)
     const { city, country, timezone } = await utils.geoData(req);
 
+    // account expiry-> deleted by cron job
+    const accountExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
     // insert user in db
     const [result] = await connection.execute(
-      `INSERT INTO users (first_name, last_name, email_address, password_hash, city, country, timezone) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO users (first_name, last_name, email_address, password_hash, city, country, timezone, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         firstName,
         lastName,
@@ -178,6 +181,7 @@ const register = async (
         city,
         country,
         timezone,
+        accountExpiresAt,
       ],
     );
 
@@ -508,6 +512,11 @@ const changePassword = async (userId, password, req) => {
       [userId, ipAddress, city, country, userAgent, deviceInfo],
     );
 
+    const [rows] = await connection.execute(
+      `SELECT changed_at FROM password_change_history WHERE user_id = ? ORDER BY changed_at DESC LIMIT 1`,
+      [userId],
+    );
+
     await connection.commit();
 
     logger.triggerSecurityLog(
@@ -515,6 +524,8 @@ const changePassword = async (userId, password, req) => {
       "SUCCESS",
       req,
     );
+
+    return rows[0];
   } catch (error) {
     await connection.rollback();
     throw error;

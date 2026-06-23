@@ -145,11 +145,15 @@ const changePassword = async (req, res, next) => {
     const { userId } = req.user;
     const { password } = req.body;
 
-    await authService.changePassword(userId, password, req);
+    const history = await authService.changePassword(userId, password, req);
 
     return res
       .status(200)
-      .json({ status: "success", message: "Password changed successfully" });
+      .json({
+        status: "success",
+        message: "Password changed successfully",
+        payload: history,
+      });
   } catch (error) {
     next(error);
   }

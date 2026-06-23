@@ -10,6 +10,8 @@ import corsRouter from "./src/config/cors.js";
 import indexRoutes from "./src/routes/index.js";
 import { json } from "stream/consumers";
 import logger from "./src/utils/logger.js";
+import deleteUserProfile from "./src/cron/cronjob.js";
+deleteUserProfile.start();
 
 const app = express();
 
