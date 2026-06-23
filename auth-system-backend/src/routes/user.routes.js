@@ -1,5 +1,4 @@
 import express from "express";
-import { auth } from "../auth/auth.js";
 import db from "../config/db.js";
 import jwt from "jsonwebtoken";
 import emailService from "../services/email.service.js";
