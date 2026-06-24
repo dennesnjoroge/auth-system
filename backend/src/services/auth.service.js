@@ -292,33 +292,11 @@ const verifyEmail = async (verificationToken, req) => {
 
     emailService.onboardingEmail(`${first_name} ${last_name}`, email_address);
 
-    // add magic login
-    const { accessToken } = utils.signAccessToken(user_id, email_address);
-    const { refreshToken } = utils.signRefreshToken(user_id);
-
-    // hash refresh token
-    const refreshTokenHash = crypto.hash("sha256", refreshToken, "hex");
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-
-    // store hash in db
-    await connection.execute(
-      `INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE token_hash = VALUES(token_hash), expires_at = VALUES(expires_at)`,
-      [user_id, refreshTokenHash, expiresAt],
-    );
-
-    const userProfile = utils.buildUserProfile(userRows[0]);
-
     logger.triggerSecurityLog(
       auditEvents.AUDIT_EVENTS.USER_EMAIL_VERIFY,
       "SUCCESS",
       req,
     );
-
-    return {
-      userProfile,
-      accessToken,
-      refreshToken,
-    };
   } catch (error) {
     await connection.rollback();
 

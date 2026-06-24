@@ -57,27 +57,11 @@ const verifyEmail = async (req, res, next) => {
   try {
     const { verificationToken } = req.body;
 
-    const { userProfile, accessToken, refreshToken } =
-      await authService.verifyEmail(verificationToken, req);
-
-    res.cookie("_at", accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 15 * 60 * 1000,
-    });
-
-    res.cookie("_rt", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    await authService.verifyEmail(verificationToken, req);
 
     return res.status(200).json({
       status: "success",
       message: "Email verified successfully",
-      payload: userProfile,
     });
   } catch (error) {
     next(error);
@@ -147,13 +131,11 @@ const changePassword = async (req, res, next) => {
 
     const history = await authService.changePassword(userId, password, req);
 
-    return res
-      .status(200)
-      .json({
-        status: "success",
-        message: "Password changed successfully",
-        payload: history,
-      });
+    return res.status(200).json({
+      status: "success",
+      message: "Password changed successfully",
+      payload: history,
+    });
   } catch (error) {
     next(error);
   }

@@ -1,5 +1,4 @@
-.env.development
-.env.production
+.env.local
 script.js
 
 # Logs
