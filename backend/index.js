@@ -6,7 +6,7 @@ import swaggerJSDoc from "swagger-jsdoc";
 import os from "os";
 import cookieParser from "cookie-parser";
 import db from "./src/config/db.js";
-import corsRouter from "./src/config/cors.js";
+import corsMiddleware from "./src/config/cors.js";
 import indexRoutes from "./src/routes/index.js";
 import { json } from "stream/consumers";
 import limiter from "./src/limiter/limiter.js";
@@ -52,7 +52,7 @@ const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN;
 app.disable("x-powered-by");
 app.use(cookieParser());
 
-app.use(corsRouter);
+app.use(corsMiddleware);
 
 app.use(express.json({ limit: "1mb" }));
 
