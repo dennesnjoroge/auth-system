@@ -56,7 +56,7 @@ app.use(corsRouter);
 
 app.use(express.json({ limit: "1mb" }));
 
-app.use("/", (req, res) => {
+app.get("/", (req, res) => {
   res.status(200).json({
     status: "success",
     message: "API is running",

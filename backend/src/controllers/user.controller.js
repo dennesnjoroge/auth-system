@@ -37,13 +37,13 @@ const deleteAccount = async (req, res, next) => {
     res.clearCookie("_at", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: "none",
     });
 
     res.clearCookie("_rt", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: "none",
     });
 
     res.status(200).json({
