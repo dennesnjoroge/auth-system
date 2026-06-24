@@ -56,6 +56,13 @@ app.use(corsRouter);
 
 app.use(express.json({ limit: "1mb" }));
 
+app.use("/", (req, res) => {
+  res.status(200).json({
+    status: "success",
+    message: "API is running",
+  });
+});
+
 app.use("/api/v1", indexRoutes);
 
 app.use((error, req, res, next) => {
