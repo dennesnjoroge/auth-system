@@ -46,7 +46,7 @@ const options = {
 const swaggerSpec = swaggerJSDoc(options);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN;
 
 app.disable("x-powered-by");
@@ -82,8 +82,6 @@ app.use((error, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`server is running on http://localhost:${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server is listening on port ${PORT}`);
 });
-
-export default app;
