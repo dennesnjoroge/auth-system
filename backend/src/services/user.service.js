@@ -1,6 +1,4 @@
 import db from "../config/db.js";
-import auditEvents from "../constants/auditEvents.js";
-import logger from "../utils/logger.js";
 import utils from "../utils/utils.js";
 import emailService from "./email.service.js";
 
@@ -55,12 +53,6 @@ const deleteAccount = async (userId, req) => {
     emailService.deleteAccountEmail(
       `${first_name} ${last_name}`,
       email_address,
-    );
-
-    logger.triggerSecurityLog(
-      auditEvents.AUDIT_EVENTS.USER_ACCOUNT_DELETION,
-      "SUCCESS",
-      req,
     );
   } catch (error) {
     await connection.rollback();

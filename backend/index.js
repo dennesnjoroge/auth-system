@@ -9,7 +9,6 @@ import db from "./src/config/db.js";
 import corsRouter from "./src/config/cors.js";
 import indexRoutes from "./src/routes/index.js";
 import { json } from "stream/consumers";
-import logger from "./src/utils/logger.js";
 import limiter from "./src/limiter/limiter.js";
 import deleteUserProfile from "./src/cron/cronjob.js";
 deleteUserProfile.start();
@@ -68,11 +67,7 @@ app.use((error, req, res, next) => {
     });
   }
 
-  logger.triggerSystemErrorLog(error.message, error, req);
-
-  if (process.env.NODE_ENV === "development") {
-    console.error(error);
-  }
+  console.log(error);
 
   return res.status(500).json({
     status: "error",
@@ -83,3 +78,5 @@ app.use((error, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`server is running on http://localhost:${PORT}`);
 });
+
+export default app;

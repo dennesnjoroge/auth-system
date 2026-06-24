@@ -2,10 +2,8 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import db from "../config/db.js";
 import utils from "../utils/utils.js";
-import logger from "../utils/logger.js";
 import emailService from "./email.service.js";
 import alertService from "./alert.service.js";
-import auditEvents from "../constants/auditEvents.js";
 
 const login = async (emailAddress, password, req) => {
   try {
@@ -15,15 +13,6 @@ const login = async (emailAddress, password, req) => {
     );
 
     if (rows.length === 0) {
-      logger.triggerSecurityLog(
-        auditEvents.AUDIT_EVENTS.AUTH_LOGIN_FAILED,
-        "FAILED",
-        req,
-        {
-          emailAddress,
-          reason: auditEvents.AUDIT_REASONS.AUTH.EMAIL_NOT_FOUND,
-        },
-      );
       throw utils.appError("Incorrect email or password", 401);
     }
 
@@ -44,15 +33,6 @@ const login = async (emailAddress, password, req) => {
     const comparePassword = await bcrypt.compare(password, user.password_hash);
 
     if (!comparePassword) {
-      logger.triggerSecurityLog(
-        auditEvents.AUDIT_EVENTS.AUTH_LOGIN_FAILED,
-        "FAILED",
-        req,
-        {
-          emailAddress,
-          reason: auditEvents.AUDIT_REASONS.AUTH.INVALID_PASSWORD,
-        },
-      );
       throw utils.appError("Incorrect email or password", 401);
     }
 
@@ -64,16 +44,6 @@ const login = async (emailAddress, password, req) => {
     const token = tokenRows[0];
 
     if (user.email_verified === 0) {
-      logger.triggerSecurityLog(
-        auditEvents.AUDIT_EVENTS.AUTH_LOGIN_FAILED,
-        "FAILED",
-        req,
-        {
-          emailAddress: emailAddress,
-          reason: auditEvents.AUDIT_REASONS.AUTH.EMAIL_NOT_VERIFIED,
-        },
-      );
-
       if (token?.expires_at) {
         if (new Date(token.expires_at).getTime() > Date.now()) {
           throw utils.appError(
@@ -95,12 +65,6 @@ const login = async (emailAddress, password, req) => {
         403,
       );
     }
-
-    logger.triggerSecurityLog(
-      auditEvents.AUDIT_EVENTS.AUTH_LOGIN_SUCCESS,
-      "SUCCESS",
-      req,
-    );
 
     const { accessToken } = utils.signAccessToken(id);
     const { refreshToken } = utils.signRefreshToken(id);
@@ -143,15 +107,6 @@ const register = async (
     );
 
     if (rows.length > 0) {
-      logger.triggerSecurityLog(
-        auditEvents.AUDIT_EVENTS.AUTH_REGISTRATION_FAILED,
-        "FAILED",
-        req,
-        {
-          email: emailAddress,
-          reason: auditEvents.AUDIT_REASONS.AUTH.EMAIL_CONFLICT,
-        },
-      );
       throw utils.appError(
         "An account with that email address already exists",
         409,
@@ -200,13 +155,6 @@ const register = async (
       emailAddress,
       verificationToken,
     );
-
-    logger.triggerSecurityLog(
-      auditEvents.AUDIT_EVENTS.AUTH_REGISTRATION_SUCCESS,
-      "SUCCESS",
-      req,
-      { userId },
-    );
   } catch (error) {
     await connection.rollback();
     throw error;
@@ -231,12 +179,6 @@ const verifyEmail = async (verificationToken, req) => {
     );
 
     if (rows.length === 0) {
-      logger.triggerSecurityLog(
-        auditEvents.AUDIT_EVENTS.USER_EMAIL_VERIFY,
-        "FAILED",
-        req,
-        { reason: "Expired token" },
-      );
       throw utils.appError("Invalid or expired verification token", 400);
     }
 
@@ -291,12 +233,6 @@ const verifyEmail = async (verificationToken, req) => {
     await connection.commit();
 
     emailService.onboardingEmail(`${first_name} ${last_name}`, email_address);
-
-    logger.triggerSecurityLog(
-      auditEvents.AUDIT_EVENTS.USER_EMAIL_VERIFY,
-      "SUCCESS",
-      req,
-    );
   } catch (error) {
     await connection.rollback();
 
@@ -315,12 +251,6 @@ const logout = async (refreshToken, req) => {
     await db.execute(`DELETE FROM refresh_tokens WHERE token_hash = ?`, [
       incomingHash,
     ]);
-
-    logger.triggerSecurityLog(
-      auditEvents.AUDIT_EVENTS.AUTH_LOGOUT,
-      "SUCCESS",
-      req,
-    );
   } catch (error) {
     throw error;
   }
@@ -336,15 +266,6 @@ const forgotPassword = async (emailAddress, req) => {
 
     // return silently
     if (rows.length === 0) {
-      logger.triggerSecurityLog(
-        auditEvents.AUDIT_EVENTS.AUTH_FORGOT_PASSWORD_SEND_LINK,
-        "FAILED",
-        req,
-        {
-          email: emailAddress,
-          reason: auditEvents.AUDIT_REASONS.AUTH.EMAIL_NOT_FOUND,
-        },
-      );
       return;
     }
 
@@ -366,13 +287,6 @@ const forgotPassword = async (emailAddress, req) => {
       emailAddress,
       resetToken,
     );
-
-    logger.triggerSecurityLog(
-      auditEvents.AUDIT_EVENTS.AUTH_FORGOT_PASSWORD_SEND_LINK,
-      "SUCCESS",
-      req,
-      { emailAddress },
-    );
   } catch (error) {
     throw error;
   }
@@ -393,15 +307,6 @@ const resetPassword = async (resetToken, password, req) => {
     );
 
     if (tokenRows.length === 0) {
-      logger.triggerSecurityLog(
-        auditEvents.AUDIT_EVENTS.AUTH_PASSWORD_RESET,
-        "FAILED",
-        req,
-        {
-          token: resetToken,
-          reason: auditEvents.AUDIT_REASONS.AUTH.TOKEN_EXPIRED,
-        },
-      );
       throw utils.appError("Invalid or expired reset token", 400);
     }
 
@@ -418,15 +323,6 @@ const resetPassword = async (resetToken, password, req) => {
     );
 
     if (userRows.length === 0) {
-      logger.triggerSecurityLog(
-        auditEvents.AUDIT_EVENTS.AUTH_PASSWORD_RESET,
-        "FAILED",
-        req,
-        {
-          userId: user_id,
-          reason: auditEvents.AUDIT_REASONS.AUTH.USER_NOT_FOUND,
-        },
-      );
       const error = new Error("User not found");
       error.statusCode = 500;
 
@@ -449,13 +345,6 @@ const resetPassword = async (resetToken, password, req) => {
 
     await connection.commit();
     alertService.recordPasswordChange(user_id, req);
-
-    logger.triggerSecurityLog(
-      auditEvents.AUDIT_EVENTS.AUTH_PASSWORD_RESET,
-      "SUCCESS",
-      req,
-      { user_id },
-    );
   } catch (error) {
     await connection.rollback();
     throw error;
@@ -496,12 +385,6 @@ const changePassword = async (userId, password, req) => {
     );
 
     await connection.commit();
-
-    logger.triggerSecurityLog(
-      auditEvents.AUDIT_EVENTS.AUTH_PASSWORD_CHANGE,
-      "SUCCESS",
-      req,
-    );
 
     return rows[0];
   } catch (error) {
