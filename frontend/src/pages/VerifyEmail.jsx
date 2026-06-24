@@ -12,7 +12,7 @@ function VerifyEmail() {
 
   useEffect(() => {
     if (!verificationToken) {
-      navigate("/dashboard", { replace: true });
+      navigate("/login", { replace: true });
       return;
     }
 
